@@ -57,6 +57,8 @@ Generates a random string of characters for the filename.
   - Example: `['suffix' => '_draft']` generates "a1b2c3d4_draft.txt"
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Generate an 8-character random filename with prefix and suffix
 Onym::make(strategy: 'random', options: [
     'length' => 8,
@@ -83,6 +85,8 @@ Generates a UUID v4 (universally unique identifier) for the filename.
   - Example: `['suffix' => '_backup']` generates "123e4567-e89b-12d3-a456-426614174000_backup.txt"
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Generate a UUID filename with prefix and suffix
 Onym::make(strategy: 'uuid', options: [
     'prefix' => 'id_',
@@ -114,6 +118,8 @@ Adds a timestamp to the filename using PHP's DateTime formatting.
   - Example: `['suffix' => '_archive']`
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Using timestamp with prefix and suffix
 Onym::make('document', 'pdf', 'timestamp', [
     'format' => 'Y-m-d_H-i-s',
@@ -146,6 +152,8 @@ Similar to timestamp but focused on date-only formats.
   - Example: `['suffix' => '_version']`
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Using date with prefix and suffix
 Onym::make('document', 'pdf', 'date', [
     'format' => 'Y-m-d',
@@ -175,6 +183,8 @@ Adds a number to the filename.
   - Example: `['suffix' => '_final']`
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Adding numbers with prefix and suffix
 Onym::make('document', 'pdf', 'numbered', [
     'number' => 5,
@@ -201,6 +211,8 @@ Converts the filename to a URL-friendly slug.
   - Example: `['suffix' => '_draft']`
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Converting strings to slugs with prefix and suffix
 Onym::make('My Document Name', 'pdf', 'slug', [
     'prefix' => 'post_',
@@ -233,6 +245,8 @@ Generates a hash of the filename using various algorithms.
   - Example: `['suffix' => '_checksum']`
 
 ```php
+use Blaspsoft\Onym\Facades\Onym;
+
 // Using hash with prefix and suffix
 Onym::make('document', 'pdf', 'hash', [
     'algorithm' => 'md5',

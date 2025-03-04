@@ -49,22 +49,49 @@ Generates a random string of characters for the filename.
 - `length` (int): The length of the random string
   - Default: 16
   - Example: `['length' => 8]` generates "a1b2c3d4.txt"
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'temp_']` generates "temp_a1b2c3d4.txt"
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_draft']` generates "a1b2c3d4_draft.txt"
 
 ```php
-// Generate an 8-character random filename
-Onym::make(strategy: 'random', options: ['length' => 8]);
-Onym::random(8, 'txt');
+// Generate an 8-character random filename with prefix and suffix
+Onym::make(strategy: 'random', options: [
+    'length' => 8,
+    'prefix' => 'temp_',
+    'suffix' => '_draft'
+]);
+// Result: "temp_a1b2c3d4_draft.txt"
+
+// You can also use the random method directly
+Onym::random(string $extension, ?array $options = [])
 ```
 
 ### UUID Strategy
 
-Generates a UUID v4 (universally unique identifier) for the filename. This strategy doesn't accept any options as UUIDs are standardized.
+Generates a UUID v4 (universally unique identifier) for the filename.
+
+**Options:**
+
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'id_']` generates "id_123e4567-e89b-12d3-a456-426614174000.txt"
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_backup']` generates "123e4567-e89b-12d3-a456-426614174000_backup.txt"
 
 ```php
-// Generate a UUID filename
-Onym::make(strategy: 'uuid');
-Onym::uuid('txt');
-// Result: "123e4567-e89b-12d3-a456-426614174000.txt"
+// Generate a UUID filename with prefix and suffix
+Onym::make(strategy: 'uuid', options: [
+    'prefix' => 'id_',
+    'suffix' => '_backup'
+]);
+// Result: "id_123e4567-e89b-12d3-a456-426614174000_backup.txt"
+
+// You can also use the uuid method directly
+Onym::uuid(string $extension, ?array $options = [])
 ```
 
 ### Timestamp Strategy
@@ -79,14 +106,24 @@ Adds a timestamp to the filename using PHP's DateTime formatting.
     - `'Y-m-d_H-i-s'` → "2024-03-15_14-30-00"
     - `'YmdHis'` → "20240315143000"
     - `'U'` → Unix timestamp (e.g., "1710506400")
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'log_']`
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_archive']`
 
 ```php
-// Using different timestamp formats
-Onym::make('document', 'pdf', 'timestamp', ['format' => 'Y-m-d_H-i-s']);
-// Result: "2024-03-15_14-30-00_document.pdf"
+// Using timestamp with prefix and suffix
+Onym::make('document', 'pdf', 'timestamp', [
+    'format' => 'Y-m-d_H-i-s',
+    'prefix' => 'log_',
+    'suffix' => '_archive'
+]);
+// Result: "log_2024-03-15_14-30-00_document_archive.pdf"
 
-Onym::make('document', 'pdf', 'timestamp', ['format' => 'YmdHis']);
-// Result: "20240315143000_document.pdf"
+// You can also use the timestamp method directly
+Onym::timestamp(string $defaultFilename, string $extension, ?array $options = [])
 ```
 
 ### Date Strategy
@@ -101,14 +138,24 @@ Similar to timestamp but focused on date-only formats.
     - `'Y-m-d'` → "2024-03-15"
     - `'Ymd'` → "20240315"
     - `'Y/m/d'` → "2024/03/15"
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'dated_']`
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_version']`
 
 ```php
-// Using different date formats
-Onym::make('document', 'pdf', 'date', ['format' => 'Y-m-d']);
-// Result: "2024-03-15_document.pdf"
+// Using date with prefix and suffix
+Onym::make('document', 'pdf', 'date', [
+    'format' => 'Y-m-d',
+    'prefix' => 'dated_',
+    'suffix' => '_version'
+]);
+// Result: "dated_2024-03-15_document_version.pdf"
 
-Onym::make('document', 'pdf', 'date', ['format' => 'Ymd']);
-// Result: "20240315_document.pdf"
+// You can also use the date method directly
+Onym::date(string $defaultFilename, string $extension, ?array $options = [])
 ```
 
 ### Numbered Strategy
@@ -120,27 +167,49 @@ Adds a number to the filename.
 - `number` (int): The number to append to the filename
   - Default: 1
   - Example: `['number' => 5]`
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'rev_']`
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_final']`
 
 ```php
-// Adding different numbers
-Onym::make('document', 'pdf', 'numbered', ['number' => 5]);
-// Result: "document_5.pdf"
+// Adding numbers with prefix and suffix
+Onym::make('document', 'pdf', 'numbered', [
+    'number' => 5,
+    'prefix' => 'rev_',
+    'suffix' => '_final'
+]);
+// Result: "rev_document_5_final.pdf"
 
-Onym::make('document', 'pdf', 'numbered', ['number' => 001]);
-// Result: "document_001.pdf"
+// You can also use the numbered method directly
+Onym::numbered(string $defaultFilename, string $extension, ?array $options = [])
 ```
 
 ### Slug Strategy
 
-Converts the filename to a URL-friendly slug. This strategy doesn't accept any options as it uses Laravel's `Str::slug()` method with default settings.
+Converts the filename to a URL-friendly slug.
+
+**Options:**
+
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'post_']`
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_draft']`
 
 ```php
-// Converting different strings to slugs
-Onym::make('My Document Name', 'pdf', 'slug');
-// Result: "my-document-name.pdf"
+// Converting strings to slugs with prefix and suffix
+Onym::make('My Document Name', 'pdf', 'slug', [
+    'prefix' => 'post_',
+    'suffix' => '_draft'
+]);
+// Result: "post_my-document-name_draft.pdf"
 
-Onym::make('This & That!', 'pdf', 'slug');
-// Result: "this-and-that.pdf"
+// You can also use the slug method directly
+Onym::slug(string $defaultFilename, string $extension, ?array $options = [])
 ```
 
 ### Hash Strategy
@@ -156,16 +225,24 @@ Generates a hash of the filename using various algorithms.
     - 'sha1' (40 characters)
     - 'sha256' (64 characters)
     - Any algorithm supported by PHP's `hash()` function
-  - prefix
-  - suffix
+- `prefix` (string): String to prepend to the filename
+  - Default: ''
+  - Example: `['prefix' => 'hash_']`
+- `suffix` (string): String to append before the extension
+  - Default: ''
+  - Example: `['suffix' => '_checksum']`
 
 ```php
-// Using different hash algorithms
-Onym::make('document', 'pdf', 'hash', ['algorithm' => 'md5']);
-// Result: "86985e105f79b95d6bc918fb45ec7727.pdf"
+// Using hash with prefix and suffix
+Onym::make('document', 'pdf', 'hash', [
+    'algorithm' => 'md5',
+    'prefix' => 'hash_',
+    'suffix' => '_checksum'
+]);
+// Result: "hash_86985e105f79b95d6bc918fb45ec7727_checksum.pdf"
 
-Onym::make('document', 'pdf', 'hash', ['algorithm' => 'sha1']);
-// Result: "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d.pdf"
+// You can also use the hash method directly
+Onym::hash(string $defaultFilename, string $extension, ?array $options = [])
 ```
 
 ## Global Configuration
@@ -221,7 +298,7 @@ return [
 ];
 ```
 
-These defaults can be overridden on a per-call basis using the `options` parameter in the `make()` method.
+These defaults can be overridden on a per-call basis using the `options` parameter in the `make()` and in all strategy methods.
 
 ## License
 

@@ -60,14 +60,14 @@ class Onym
     )
     {
         $useStrategy = $strategy ?? $this->strategy;
-        $useOptions = $options !== null ? array_merge($this->options, $options) : $this->options;
+        $useOptions = $options !== null ? $this->mergeOptions($options, $strategy, $this->options) : $this->options;
         $defaultFilename = $defaultFilename ?? $this->defaultFilename;
         $extension = $extension ?? $this->defaultExtension;
 
         return match ($useStrategy) {
-            'random' => $this->random($useOptions['length'] ?? 16, $extension),
+            'random' => $this->random($extension, $useOptions),
             
-            'uuid' => $this->uuid($extension),
+            'uuid' => $this->uuid($extension, $useOptions),
             
             'timestamp' => $this->timestamp($defaultFilename, $extension, $useOptions),
             
@@ -88,15 +88,29 @@ class Onym
     }
 
     /**
+     * Merge options with the default options.
+     *
+     * @param array $options The options to merge.
+     * @param array $defaultOptions The default options.
+     * @return array The merged options.
+     */
+    private function mergeOptions(array $options, string $strategy, array $defaultOptions): array
+    {
+        return array_merge($defaultOptions[$strategy], $options);
+    }
+
+    /**
      * Generate a random string of characters.
      *
      * @param int|null $length The length of the random string.
      * @param string|null $extension The extension of the file.
      * @return string The random string.
      */
-    public function random(int $length, string $extension)
+    public function random(string $extension, ?array $options = null)
     {
-        return Str::random($length) . '.' . $extension;
+        $length = $options['length'] ?? 16;
+        $filename = Str::random($length);
+        return $this->applyAffixes($filename, $options) . '.' . $extension;
     }
 
     /**
@@ -105,9 +119,10 @@ class Onym
      * @param string|null $extension The extension of the file.
      * @return string The UUID string.
      */
-    public function uuid(string $extension)
+    public function uuid(string $extension, ?array $options = null)
     {
-        return (string) Str::uuid() . '.' . $extension;
+        $filename = (string) Str::uuid();
+        return $this->applyAffixes($filename, $options) . '.' . $extension;
     }
 
     /**
@@ -118,11 +133,12 @@ class Onym
      * @param array $options The options array.
      * @return string The timestamp string.
      */
-    public function timestamp(string $defaultFilename, string $extension, array $options)
+    public function timestamp(string $defaultFilename, string $extension, ?array $options = null)
     {
         $format = $options['format'] ?? 'Y-m-d_H-i-s';
         $date = new DateTime();
-        return $date->format($format) . '_' . $defaultFilename . '.' . $extension;
+        $filename = $date->format($format) . '_' . $defaultFilename;
+        return $this->applyAffixes($filename, $options) . '.' . $extension;
     }
 
     /**
@@ -133,43 +149,12 @@ class Onym
      * @param array $options The options array. 
      * @return string The date string.
      */
-    public function date(string $defaultFilename, string $extension, array $options)
+    public function date(string $defaultFilename, string $extension, ?array $options = null)
     {
         $format = $options['format'] ?? 'Y-m-d';
         $date = new DateTime();
-        return $date->format($format) . '_' . $defaultFilename . '.' . $extension;
-    }
-
-    /**
-     * Generate a prefix string.
-     *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param array $options The options array.
-     * @return string The prefix string.    
-     */
-    public function prefix(string $defaultFilename, string $extension, array $options)
-    {
-        if (!isset($options['prefix'])) {
-            throw new \InvalidArgumentException("The 'prefix' option is required for prefix strategy");
-        }
-        return $options['prefix'] . $defaultFilename . '.' . $extension;
-    }
-
-    /**
-     * Generate a suffix string.
-     *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param array $options The options array.
-     * @return string The suffix string.
-     */
-    public function suffix(string $defaultFilename, string $extension, array $options)
-    {
-        if (!isset($options['suffix'])) {
-            throw new \InvalidArgumentException("The 'suffix' option is required for suffix strategy");
-        }
-        return $defaultFilename . $options['suffix'] . '.' . $extension;
+        $filename = $date->format($format) . '_' . $defaultFilename;
+        return $this->applyAffixes($filename, $options) . '.' . $extension;
     }
 
     /**
@@ -180,10 +165,11 @@ class Onym
      * @param array $options The options array.
      * @return string The numbered string.
      */
-    public function numbered(string $defaultFilename, string $extension, array $options)
+    public function numbered(string $defaultFilename, string $extension, ?array $options = null)
     {
         $number = $options['number'] ?? 1;
-        return $defaultFilename . '_' . $number . '.' . $extension;
+        $filename = $defaultFilename . '_' . $number;
+        return $this->applyAffixes($filename, $options) . '.' . $extension;
     }
 
     /**
@@ -193,9 +179,10 @@ class Onym
      * @param string|null $extension The extension of the file.
      * @return string The slug string.
      */
-    public function slug(string $defaultFilename, string $extension)
+    public function slug(string $defaultFilename, string $extension, ?array $options = null)
     {
-        return Str::slug($defaultFilename) . '.' . $extension;
+        $filename = Str::slug($defaultFilename);
+        return $this->applyAffixes($filename, $options) . '.' . $extension;
     }
 
     /**
@@ -206,13 +193,34 @@ class Onym
      * @param array $options The options array.
      * @return string The hash string.
      */
-    public function hash(string $defaultFilename, string $extension, array $options)
+    public function hash(string $defaultFilename, string $extension, ?array $options = null)
     {
         $algorithm = $options['algorithm'] ?? 'sha256';
         if (!in_array($algorithm, hash_algos())) {
             throw new \InvalidArgumentException("Invalid hash algorithm: {$algorithm}");
         }
         $hash = hash($algorithm, $defaultFilename);
-        return $hash . '.' . $extension;
+        $filename = $hash . '.' . $extension;
+        return $this->applyAffixes($filename, $options);
+    }
+
+    /**
+     * Apply prefix and suffix to filename
+     *
+     * @param string $filename
+     * @param array $options
+     * @return string
+     */
+    private function applyAffixes(string $filename, ?array $options = null): string
+    {
+        $options = $options ?? $this->options;
+
+        if (isset($options['prefix'])) {
+            $filename = $options['prefix'] . $filename;
+        }
+        if (isset($options['suffix'])) {
+            $filename = $filename . $options['suffix'];
+        }
+        return $filename;
     }
 }

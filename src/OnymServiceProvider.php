@@ -14,7 +14,7 @@ class OnymServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/config.php' => config_path('onym.php'),
-            ], 'config');
+            ], 'onym-config');
         }
     }
 

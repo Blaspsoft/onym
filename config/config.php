@@ -66,6 +66,8 @@ return [
         */
         'random' => [
             'length' => 16,
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         /*
@@ -81,6 +83,8 @@ return [
         */
         'timestamp' => [
             'format' => 'Y-m-d_H-i-s',
+            'prefix' => 'onym_',
+            'suffix' => '_o',
         ],
 
         /*
@@ -96,36 +100,8 @@ return [
         */
         'date' => [
             'format' => 'Y-m-d',
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prefix Strategy Options
-        |--------------------------------------------------------------------------
-        |
-        | Configure the options for the prefix strategy.
-        |
-        | Available options:
-        | - prefix: The prefix of the filename.
-        |
-        */
-        'prefix' => [
             'prefix' => 'onym_',
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | Suffix Strategy Options
-        |--------------------------------------------------------------------------
-        |
-        | Configure the options for the suffix strategy.
-        |
-        | Available options:
-        | - suffix: The suffix of the filename.
-        |
-        */
-        'suffix' => [
-            'suffix' => '_onym',
+            'suffix' => '_o',
         ],
 
         /*
@@ -143,6 +119,8 @@ return [
         'numbered' => [
             'number' => 1,
             'separator' => '_',
+            'prefix' => 'onym_',
+            'suffix' => '_o',
         ],
 
         /*
@@ -160,6 +138,8 @@ return [
         'hash' => [
             'algorithm' => 'md5',
             'length' => 16,
+            'prefix' => 'onym_',
+            'suffix' => '_o',
         ],
     ],
 ];

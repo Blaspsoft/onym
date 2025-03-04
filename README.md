@@ -15,7 +15,7 @@ A flexible Laravel package for generating filenames using various strategies and
 ## 🚀 Features
 
 - ✅ **Flexible Filename Generation** – Generate filenames dynamically using various strategies.
-- 🎲 **Multiple Strategies** – Supports `random`, `uuid`, `timestamp`, `date`, `prefix`, `suffix`, `numbered`, `slug`, and `hash`.
+- 🎲 **Multiple Strategies** – Supports `random`, `uuid`, `timestamp`, `date`, `numbered`, `slug`, and `hash`.
 - 🔧 **Customizable Output** – Specify filename, extension, and additional formatting options.
 - 🎯 **Laravel-Friendly** – Designed to work seamlessly with Laravel's filesystem and configuration.
 - 📂 **Human-Readable & Unique Names** – Ensures filenames are structured, collision-free, and easy to understand.
@@ -76,7 +76,7 @@ Generates a random string of characters.
 Onym::make(strategy: 'random', options: ['length' => 8]); // e.g., "a1b2c3d4.txt"
 
 // Use the random strategy method directly
-Onym::random(8, 'txt'); // e.g., "a1b2c3d4.txt"
+Onym::random('txt', options: ['length' => 8]); // e.g., "a1b2c3d4.txt"
 ```
 
 #### UUID
@@ -119,34 +119,6 @@ Onym::make('document', 'pdf', 'date', ['format' => 'Y-m-d']);
 // Use the date strategy method directly
 Onym::date('document', 'pdf', ['format' => 'Y-m-d']);
 // Result: "2024-03-15_document.pdf"
-```
-
-#### Prefix
-
-Adds a prefix to the filename.
-
-```php
-// Use the make method and override config values
-Onym::make('document', 'pdf', 'prefix', ['prefix' => 'draft_']);
-// Result: "draft_document.pdf"
-
-// Use the prefix strategy method directly
-Onym::prefix('document', 'pdf', ['prefix' => 'draft_']);
-// Result: "draft_document.pdf"
-```
-
-#### Suffix
-
-Adds a suffix to the filename.
-
-```php
-// Use the make method and override config values
-Onym::make('document', 'pdf', 'suffix', ['suffix' => '_v1']);
-// Result: "document_v1.pdf"
-
-// Use the suffix strategy method directly
-Onym::suffix('document', 'pdf', ['suffix' => '_v1']);
-// Result: "document_v1.pdf"
 ```
 
 #### Numbered
@@ -377,32 +349,34 @@ return [
 
         'random' => [
             'length' => 16,
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         'timestamp' => [
             'format' => 'Y-m-d_H-i-s',
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         'date' => [
             'format' => 'Y-m-d',
-        ],
-
-        'prefix' => [
-            'prefix' => 'onym_',
-        ],
-
-        'suffix' => [
-            'suffix' => '_onym',
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         'numbered' => [
             'number' => 1,
             'separator' => '_',
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         'hash' => [
             'algorithm' => 'md5',
             'length' => 16,
+            'prefix' => '',
+            'suffix' => '',
         ],
     ],
 ];

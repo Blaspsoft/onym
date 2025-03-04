@@ -73,10 +73,6 @@ class Onym
             
             'date' => $this->date($defaultFilename, $extension, $useOptions),
             
-            'prefix' => $this->prefix($defaultFilename, $extension, $useOptions),
-            
-            'suffix' => $this->suffix($defaultFilename, $extension, $useOptions),
-            
             'numbered' => $this->numbered($defaultFilename, $extension, $useOptions),
             
             'slug' => $this->slug($defaultFilename, $extension),
@@ -85,18 +81,6 @@ class Onym
             
             default => $defaultFilename . '.' . $extension,
         };
-    }
-
-    /**
-     * Merge options with the default options.
-     *
-     * @param array $options The options to merge.
-     * @param array $defaultOptions The default options.
-     * @return array The merged options.
-     */
-    private function mergeOptions(array $options, string $strategy, array $defaultOptions): array
-    {
-        return array_merge($defaultOptions[$strategy], $options);
     }
 
     /**
@@ -202,6 +186,18 @@ class Onym
         $hash = hash($algorithm, $defaultFilename);
         $filename = $hash . '.' . $extension;
         return $this->applyAffixes($filename, $options);
+    }
+
+    /**
+     * Merge options with the default options.
+     *
+     * @param array $options The options to merge.
+     * @param array $defaultOptions The default options.
+     * @return array The merged options.
+     */
+    private function mergeOptions(array $options, string $strategy, array $defaultOptions): array
+    {
+        return array_merge($defaultOptions[$strategy], $options);
     }
 
     /**

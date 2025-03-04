@@ -36,134 +36,9 @@ You can publish the config file with:
 php artisan vendor:publish --tag="onym-config"
 ```
 
-This is the contents of the published config file:
-
-```php
-return [
-    'default_filename' => 'file',
-    'default_extension' => 'txt',
-    'strategy' => 'random',
-    'options' => [],
-];
-```
-
 ## Usage
 
-```php
-use Blaspsoft\Onym;
-
-// Using the default strategy from config
-$filename = Onym::make(); // e.g., "abcd1234.txt"
-
-// Specifying a strategy
-$filename = Onym::make(strategy: 'uuid'); // e.g., "123e4567-e89b-12d3-a456-426614174000.txt"
-
-// With custom filename and extension
-$filename = Onym::make('myfile', 'pdf'); // e.g., "myfile.pdf"
-
-// With custom options
-$filename = Onym::make('document', 'pdf', 'prefix', ['prefix' => 'invoice_']); // Result: "invoice_document.pdf"
-```
-
 ### Available Strategies
-
-#### Random
-
-Generates a random string of characters.
-
-```php
-// Use the make method and override config values
-Onym::make(strategy: 'random', options: ['length' => 8]); // e.g., "a1b2c3d4.txt"
-
-// Use the random strategy method directly
-Onym::random('txt', options: ['length' => 8]); // e.g., "a1b2c3d4.txt"
-```
-
-#### UUID
-
-Generates a UUID v4 string.
-
-```php
-// Use the make method and override config values
-Onym::make(strategy: 'uuid', extension: 'pdf');
-// e.g., "123e4567-e89b-12d3-a456-426614174000.pdf"
-
-// Use the uuid strategy method directly
-Onym::uuid('pdf');
-// e.g., "123e4567-e89b-12d3-a456-426614174000.pdf"
-```
-
-#### Timestamp
-
-Adds a timestamp to the filename.
-
-```php
-// Use the make method and override config values
-Onym::make('document', 'pdf', 'timestamp', ['format' => 'Y-m-d_H-i-s']);
-// Result: "2024-03-15_14-30-00_document.pdf"
-
-// Use the timestamp strategy method directly
-Onym::timestamp('document', 'pdf', ['format' => 'Y-m-d_H-i-s']);
-// Result: "2024-03-15_14-30-00_document.pdf"
-```
-
-#### Date
-
-Adds a date to the filename.
-
-```php
-// Use the make method and override config values
-Onym::make('document', 'pdf', 'date', ['format' => 'Y-m-d']);
-// Result: "2024-03-15_document.pdf"
-
-// Use the date strategy method directly
-Onym::date('document', 'pdf', ['format' => 'Y-m-d']);
-// Result: "2024-03-15_document.pdf"
-```
-
-#### Numbered
-
-Adds a number to the filename.
-
-```php
-// Use the make method and override config values
-Onym::make('document', 'pdf', 'numbered', ['number' => 5]);
-// Result: "document_5.pdf"
-
-// Use the numbered strategy method directly
-Onym::numbered('document', 'pdf', ['number' => 5]);
-// Result: "document_5.pdf"
-```
-
-#### Slug
-
-Converts the filename to a URL-friendly slug.
-
-```php
-// Use the make method and override config values
-Onym::make('My Document', 'pdf', 'slug');
-// Result: "my-document.pdf"
-
-// Use the slug strategy method directly
-Onym::slug('My Document', 'pdf');
-// Result: "my-document.pdf"
-```
-
-#### Hash
-
-Generates a hash of the filename.
-
-```php
-// Use the make method and override config values
-Onym::make('document', 'pdf', 'hash', ['algorithm' => 'md5']);
-// Result: "86985e105f79b95d6bc918fb45ec7727.pdf"
-
-// Use the hash strategy method directly
-Onym::hash('document', 'pdf', ['algorithm' => 'md5']);
-// Result: "86985e105f79b95d6bc918fb45ec7727.pdf"
-```
-
-## Detailed Strategy Reference
 
 ### Random Strategy
 
@@ -236,44 +111,6 @@ Onym::make('document', 'pdf', 'date', ['format' => 'Ymd']);
 // Result: "20240315_document.pdf"
 ```
 
-### Prefix Strategy
-
-Adds a prefix to the filename. This strategy requires the prefix option to be set.
-
-**Options:**
-
-- `prefix` (string): The string to prepend to the filename
-  - Required: Yes
-  - Example: `['prefix' => 'draft_']`
-
-```php
-// Adding different prefixes
-Onym::make('document', 'pdf', 'prefix', ['prefix' => 'draft_']);
-// Result: "draft_document.pdf"
-
-Onym::make('document', 'pdf', 'prefix', ['prefix' => 'v1-']);
-// Result: "v1-document.pdf"
-```
-
-### Suffix Strategy
-
-Adds a suffix to the filename before the extension.
-
-**Options:**
-
-- `suffix` (string): The string to append to the filename
-  - Required: Yes
-  - Example: `['suffix' => '_v1']`
-
-```php
-// Adding different suffixes
-Onym::make('document', 'pdf', 'suffix', ['suffix' => '_v1']);
-// Result: "document_v1.pdf"
-
-Onym::make('document', 'pdf', 'suffix', ['suffix' => '_draft']);
-// Result: "document_draft.pdf"
-```
-
 ### Numbered Strategy
 
 Adds a number to the filename.
@@ -313,12 +150,14 @@ Generates a hash of the filename using various algorithms.
 **Options:**
 
 - `algorithm` (string): The hashing algorithm to use
-  - Default: 'sha256'
+  - Default: 'md5'
   - Available algorithms:
     - 'md5' (32 characters)
     - 'sha1' (40 characters)
     - 'sha256' (64 characters)
     - Any algorithm supported by PHP's `hash()` function
+  - prefix
+  - suffix
 
 ```php
 // Using different hash algorithms

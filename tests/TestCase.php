@@ -16,9 +16,9 @@ class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
-        config()->set('onym.strategy', 'random');
-        config()->set('onym.options', []);
-        config()->set('onym.default_filename', 'file');
-        config()->set('onym.default_extension', 'txt');
+        config()->set('onym.strategy', config('onym.strategy', 'random'));
+        config()->set('onym.options', config('onym.options', []));
+        config()->set('onym.default_filename', config('onym.default_filename', 'file'));
+        config()->set('onym.default_extension', config('onym.default_extension', 'txt'));
     }
 }

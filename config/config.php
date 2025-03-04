@@ -27,7 +27,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure how converted files should be named by default.
-    | Available strategies: 'original', 'random', 'uuid', 'timestamp', 'date',
+    | Available strategies: 'random', 'uuid', 'timestamp', 'date',
     | 'prefix', 'suffix', 'numbered', 'slug', 'hash'
     |
     */
@@ -72,6 +72,23 @@ return [
 
         /*
         |--------------------------------------------------------------------------
+        | UUID Strategy Options
+        |--------------------------------------------------------------------------
+        |
+        | Configure the options for the UUID strategy.
+        |
+        | Available options:
+        | - prefix: The prefix of the filename.
+        | - suffix: The suffix of the filename.
+        |
+        */
+        'uuid' => [
+            'prefix' => '',
+            'suffix' => '',
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
         | Timestamp Strategy Options
         |--------------------------------------------------------------------------
         |
@@ -83,8 +100,8 @@ return [
         */
         'timestamp' => [
             'format' => 'Y-m-d_H-i-s',
-            'prefix' => 'onym_',
-            'suffix' => '_o',
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         /*
@@ -100,8 +117,8 @@ return [
         */
         'date' => [
             'format' => 'Y-m-d',
-            'prefix' => 'onym_',
-            'suffix' => '_o',
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         /*
@@ -119,8 +136,25 @@ return [
         'numbered' => [
             'number' => 1,
             'separator' => '_',
-            'prefix' => 'onym_',
-            'suffix' => '_o',
+            'prefix' => '',
+            'suffix' => '',
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Slug Strategy Options
+        |--------------------------------------------------------------------------
+        |
+        | Configure the options for the slug strategy.
+        |
+        | Available options:
+        | - separator: The separator of the slug.
+        |
+        */
+        'slug' => [
+            'separator' => '-',
+            'prefix' => '',
+            'suffix' => '',
         ],
 
         /*
@@ -137,9 +171,8 @@ return [
         */
         'hash' => [
             'algorithm' => 'md5',
-            'length' => 16,
-            'prefix' => 'onym_',
-            'suffix' => '_o',
+            'prefix' => '',
+            'suffix' => '',
         ],
     ],
 ];

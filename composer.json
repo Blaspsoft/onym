@@ -1,54 +1,53 @@
 {
-    "name": "blaspsoft/onym",
-    "description": "Onym is a lightweight Laravel package designed to generate unique, structured, and meaningful filenames effortlessly. ",
-    "keywords": [
-        "blaspsoft",
-        "onym"
-    ],
-    "homepage": "https://github.com/blaspsoft/onym",
-    "license": "MIT",
-    "type": "library",
-    "authors": [
-        {
-            "name": "Michael Deeming",
-            "email": "mike.deeming@blaspsoft.com",
-            "role": "Developer"
-        }
-    ],
-    "require": {
-        "php": "^7.4|^8.0",
-        "illuminate/support": "^8.0"
-    },
-    "require-dev": {
-        "orchestra/testbench": "^6.0",
-        "phpunit/phpunit": "^9.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "Blaspsoft\\Onym\\": "src"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Blaspsoft\\Onym\\Tests\\": "tests"
-        }
-    },
-    "scripts": {
-        "test": "vendor/bin/phpunit",
-        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
-
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Blaspsoft\\Onym\\OnymServiceProvider"
-            ],
-            "aliases": {
-                "Onym": "Blaspsoft\\Onym\\OnymFacade"
-            }
-        }
+  "name": "blaspsoft/onym",
+  "description": "Onym is a lightweight Laravel package designed to generate unique, structured, and meaningful filenames effortlessly. ",
+  "keywords": [
+    "blaspsoft",
+    "onym"
+  ],
+  "homepage": "https://github.com/blaspsoft/onym",
+  "license": "MIT",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Michael Deeming",
+      "email": "mike.deeming@blaspsoft.com",
+      "role": "Developer"
     }
+  ],
+  "require": {
+    "php": "^8.0|^8.2|^8.3|^8.4",
+    "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0",
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Blaspsoft\\Onym\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Blaspsoft\\Onym\\Tests\\": "tests"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Blaspsoft\\Onym\\OnymServiceProvider"
+      ],
+      "aliases": {
+        "Onym": "Blaspsoft\\Onym\\Facades\\Onym"
+      }
+    }
+  }
 }

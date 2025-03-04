@@ -27,7 +27,7 @@ class OnymServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'onym');
 
         // Register the main class to use with the facade
-        $this->bind->singleton('onym', function () {
+        $this->app->bind('onym', function () {
             return new Onym;
         });
     }

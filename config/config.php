@@ -110,7 +110,7 @@ return [
         |
         */
         'prefix' => [
-            'prefix' => 'converted_',
+            'prefix' => 'onym_',
         ],
 
         /*
@@ -125,7 +125,7 @@ return [
         |
         */
         'suffix' => [
-            'suffix' => '_converted',
+            'suffix' => '_onym',
         ],
 
         /*

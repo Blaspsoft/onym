@@ -363,25 +363,53 @@ You can set default values for all strategies in your `config/onym.php` file:
 
 ```php
 return [
-    // Default strategy when none is specified
-    'strategy' => 'random',
-
-    // Default options for all strategies
-    'options' => [
-        'length' => 16,           // for random strategy
-        'format' => 'Y-m-d_H-i-s', // for timestamp strategy
-        'prefix' => 'pre_',       // for prefix strategy
-        'suffix' => '_v1',        // for suffix strategy
-        'number' => 1,            // for numbered strategy
-        'algorithm' => 'sha256',  // for hash strategy
-    ],
-
     // Default filename when none is provided
     'default_filename' => 'file',
 
     // Default extension when none is provided
     'default_extension' => 'txt',
+
+    // Default strategy when none is specified
+    'strategy' => 'random',
+
+    // Default options for all strategies
+    'options' => [
+
+        'random' => [
+            'length' => 16,
+        ],
+
+        'timestamp' => [
+            'format' => 'Y-m-d_H-i-s',
+        ],
+
+        'date' => [
+            'format' => 'Y-m-d',
+        ],
+
+        'prefix' => [
+            'prefix' => 'onym_',
+        ],
+
+        'suffix' => [
+            'suffix' => '_onym',
+        ],
+
+        'numbered' => [
+            'number' => 1,
+            'separator' => '_',
+        ],
+
+        'hash' => [
+            'algorithm' => 'md5',
+            'length' => 16,
+        ],
+    ],
 ];
 ```
 
 These defaults can be overridden on a per-call basis using the `options` parameter in the `make()` method.
+
+## License
+
+Blasp is open-sourced software licensed under the [MIT license](LICENSE).

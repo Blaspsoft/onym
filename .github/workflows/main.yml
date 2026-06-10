@@ -6,22 +6,33 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.3", "8.4"]
+        laravel: ["12.*", "13.*"]
+        include:
+          - laravel: "12.*"
+            testbench: "10.*"
+          - laravel: "13.*"
+            testbench: "11.*"
+
+    name: P${{ matrix.php }} - L${{ matrix.laravel }}
+
     steps:
-      # Step 1: Check out the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2" # Set your desired PHP version
+          php-version: ${{ matrix.php }}
           extensions: mbstring, dom, zip
 
-      # Step 3: Install Composer dependencies
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: |
+          composer require "illuminate/support:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction
 
-      # Step 4: Run PHPUnit tests
       - name: Run tests
         run: php ./vendor/bin/phpunit

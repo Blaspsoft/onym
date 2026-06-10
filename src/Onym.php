@@ -45,12 +45,20 @@ class Onym
      */
     public string $defaultExtension;
 
-    public function __construct()
+    /**
+     * The default separator to use.
+     *
+     * @var string
+     */
+    public string $defaultSeparator;
+
+    public function __construct(array $options = [], ?string $defaultSeparator = null)
     {
         $this->strategy = config('onym.strategy', 'random');
-        $this->options = config('onym.options', []);
+        $this->options = $options ?: config('onym.options', []);
         $this->defaultFilename = config('onym.default_filename', 'file');
         $this->defaultExtension = config('onym.default_extension', 'txt');
+        $this->defaultSeparator = $defaultSeparator ?? config('onym.default_separator', '_');
     }
 
     /**
@@ -135,7 +143,8 @@ class Onym
 
         $format = $options['format'] ?? 'Y-m-d_H-i-s';
         $date = new DateTime();
-        $filename = $date->format($format) . '_' . $defaultFilename;
+        $separator = $options['separator'] ?? $this->defaultSeparator;
+        $filename = $date->format($format) . $separator . $defaultFilename;
         return $this->applyAffixes($filename, $extension, $options);
     }
 
@@ -152,7 +161,8 @@ class Onym
         $options = $this->mergeOptions($options, 'date', $this->options);
         $format = $options['format'] ?? 'Y-m-d';
         $date = new DateTime();
-        $filename = $date->format($format) . '_' . $defaultFilename;
+        $separator = $options['separator'] ?? $this->defaultSeparator;
+        $filename = $date->format($format) . $separator . $defaultFilename;
         return $this->applyAffixes($filename, $extension, $options);
     }
 
@@ -168,7 +178,8 @@ class Onym
     {
         $options = $this->mergeOptions($options, 'numbered', $this->options);
         $number = $options['number'] ?? 1;
-        $filename = $defaultFilename . '_' . $number;
+        $separator = $options['separator'] ?? $this->defaultSeparator;
+        $filename = $defaultFilename . $separator . $number;
         return $this->applyAffixes($filename, $extension, $options);
     }
 
@@ -182,7 +193,8 @@ class Onym
     public function slug(string $defaultFilename, string $extension, ?array $options = [])
     {
         $options = $this->mergeOptions($options, 'slug', $this->options);
-        $filename = Str::slug($defaultFilename, $options['separator']);
+        $separator = $options['separator'] ?? $this->defaultSeparator;
+        $filename = Str::slug($defaultFilename, $separator);
         return $this->applyAffixes($filename, $extension, $options);
     }
 

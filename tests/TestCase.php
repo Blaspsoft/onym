@@ -20,5 +20,6 @@ class TestCase extends Orchestra
         config()->set('onym.options', config('onym.options', []));
         config()->set('onym.default_filename', config('onym.default_filename', 'file'));
         config()->set('onym.default_extension', config('onym.default_extension', 'txt'));
+        config()->set('onym.default_separator', config('onym.default_separator', '_'));
     }
 }

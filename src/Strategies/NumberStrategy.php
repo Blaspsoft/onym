@@ -14,7 +14,10 @@ class NumberStrategy implements Strategy
     {
         $number = $options['number'] ?? 1;
 
-        if (filter_var($number, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === false) {
+        // Digit strings are kept as given, so zero-padding like "007" survives.
+        $valid = (is_int($number) && $number >= 0) || (is_string($number) && ctype_digit($number));
+
+        if (! $valid) {
             throw new InvalidArgumentException('The [number] option must be a whole number of 0 or more');
         }
 

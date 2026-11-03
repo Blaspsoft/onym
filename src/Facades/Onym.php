@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Blaspsoft\Onym\Onym extend(string $name, \Blaspsoft\Onym\Contracts\Strategy|\Closure $strategy)
  * @method static bool hasStrategy(string $name)
  * @method static string sanitize(string $filename)
+ * @method static \Blaspsoft\Onym\Pipeline pipeline()
  *
  * @see \Blaspsoft\Onym\Onym
  */

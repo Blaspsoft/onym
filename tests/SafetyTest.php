@@ -193,6 +193,7 @@ class SafetyTest extends TestCase
     public function numeric_strings_are_accepted_for_numbers(): void
     {
         $this->assertSame('report_7.pdf', Onym::numbered('report', 'pdf', ['number' => '7']));
+        $this->assertSame('report_007.pdf', Onym::numbered('report', 'pdf', ['number' => '007']));
         $this->assertSame(8, strlen(pathinfo(Onym::random(null, 'txt', ['length' => '8']), PATHINFO_FILENAME)));
     }
 }

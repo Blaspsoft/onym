@@ -12,7 +12,7 @@ class SlugStrategy implements Strategy
 {
     public function part(Context $context, array $options): string
     {
-        $separator = $context->separator;
+        $separator = (string) ($options['separator'] ?? $context->separator);
 
         // Names with nothing to slug (e.g. "!!!" or non-Latin text) fall back to the default filename.
         return Str::slug($context->original, $separator)

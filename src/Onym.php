@@ -50,6 +50,38 @@ class Onym
         $strategy ??= $this->strategies->getDefaultDriver();
         $options = array_merge((array) $this->config->get("onym.options.{$strategy}", []), $options ?? []);
 
+        $steps = array_map(
+            fn (string $step): array => [$step, $options],
+            self::PRESETS[$strategy] ?? [$strategy],
+        );
+
+        return $this->generate($steps, $filename, $extension, $options);
+    }
+
+    /**
+     * Start an immutable pipeline that joins several strategies into one name.
+     *
+     * Onym::pipeline()->date()->slug()->random(6)->make('Q3 Report', 'pdf');
+     */
+    public function pipeline(): Pipeline
+    {
+        return new Pipeline($this);
+    }
+
+    /**
+     * Generate a filename from a list of steps.
+     *
+     * @internal Use make() or pipeline().
+     *
+     * @param  list<array{0: string|Strategy, 1: array<string, mixed>}>  $steps
+     * @param  array<string, mixed>  $options  Name-level options: prefix, suffix, separator, sanitize.
+     */
+    public function generate(array $steps, ?string $filename, ?string $extension, array $options): string
+    {
+        if ($steps === []) {
+            throw new InvalidArgumentException('An Onym pipeline needs at least one step');
+        }
+
         $defaultFilename = (string) $this->config->get('onym.default_filename', 'file');
         $defaultExtension = (string) $this->config->get('onym.default_extension', 'txt');
         $original = $filename ?? $defaultFilename;
@@ -64,13 +96,8 @@ class Onym
             now: Carbon::now(),
         );
 
-        $parts = array_map(
-            fn (string $step): string => $this->strategies->strategy($step)->part($context, $options),
-            self::PRESETS[$strategy] ?? [$strategy],
-        );
-
         $basename = $this->stringOption($options, 'prefix')
-            .implode($separator, $parts)
+            .implode($separator, $this->parts($steps, $context))
             .$this->stringOption($options, 'suffix');
 
         // Clean the whole name, so prefixes, suffixes, date formats and custom
@@ -80,6 +107,30 @@ class Onym
         }
 
         return $this->sanitizer->limit($basename, $context->extension, $this->maxLength()).'.'.$context->extension;
+    }
+
+    /**
+     * Run each step against the context. Each step's options are merged
+     * over the config options for that strategy name.
+     *
+     * @internal
+     *
+     * @param  list<array{0: string|Strategy, 1: array<string, mixed>}>  $steps
+     * @return list<string>
+     */
+    public function parts(array $steps, Context $context): array
+    {
+        return array_map(function (array $step) use ($context): string {
+            [$strategy, $options] = $step;
+
+            if ($strategy instanceof Strategy) {
+                return $strategy->part($context, $options);
+            }
+
+            $options = array_merge((array) $this->config->get("onym.options.{$strategy}", []), $options);
+
+            return $this->strategies->strategy($strategy)->part($context, $options);
+        }, $steps);
     }
 
     /**

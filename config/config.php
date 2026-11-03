@@ -26,7 +26,8 @@ return [
     | Onym Default Separator
     |--------------------------------------------------------------------------
     |
-    | Configure the default separator to use.
+    | Placed between the pieces of a name, e.g. the date and the filename.
+    | A "separator" option for a strategy overrides it.
     */
     'default_separator' => '_',
 
@@ -77,7 +78,8 @@ return [
     | - prefix: The prefix of the filename.
     | - suffix: The suffix of the filename.
     | - number: The number of the filename.
-    | - separator: The separator of the numbered filename.
+    | - separator: Placed between the pieces of a name (overrides
+    |   "default_separator" for that strategy). For slug, the word separator.
     | - algorithm: The algorithm of the hash.
     |
     */
@@ -180,12 +182,10 @@ return [
         |
         | Available options:
         | - number: The number of the filename.
-        | - separator: The separator of the numbered filename.
         |
         */
         'numbered' => [
             'number' => 1,
-            'separator' => '_',
             'prefix' => '',
             'suffix' => '',
         ],

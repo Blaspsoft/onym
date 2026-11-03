@@ -57,8 +57,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure how converted files should be named by default.
-    | Available strategies: 'random', 'uuid', 'timestamp', 'date',
-    | 'prefix', 'suffix', 'numbered', 'slug', 'hash'
+    | Available strategies: 'random', 'uuid', 'ulid', 'timestamp', 'date',
+    | 'numbered', 'slug', 'hash', plus any registered with Onym::extend()
     |
     */
     'strategy' => 'random',
@@ -92,10 +92,13 @@ return [
         |
         | Available options:
         | - length: The length of the random string.
+        | - lowercase: Use lowercase letters only (avoids clashes on
+        |   case-insensitive filesystems such as macOS and Windows).
         |
         */
         'random' => [
             'length' => 16,
+            'lowercase' => false,
             'prefix' => '',
             'suffix' => '',
         ],
@@ -113,6 +116,23 @@ return [
         |
         */
         'uuid' => [
+            'prefix' => '',
+            'suffix' => '',
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | ULID Strategy Options
+        |--------------------------------------------------------------------------
+        |
+        | A ULID is unique like a UUID but sorts by creation time.
+        |
+        | Available options:
+        | - lowercase: Lowercase the ULID.
+        |
+        */
+        'ulid' => [
+            'lowercase' => false,
             'prefix' => '',
             'suffix' => '',
         ],
@@ -196,7 +216,6 @@ return [
         |
         | Available options:
         | - algorithm: The algorithm of the hash.
-        | - length: The length of the hash.
         |
         */
         'hash' => [
@@ -204,5 +223,20 @@ return [
             'prefix' => '',
             'suffix' => '',
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onym Unique Names
+    |--------------------------------------------------------------------------
+    |
+    | Used by Onym::unique(). "disk" is the storage disk to check (null uses
+    | the default filesystem disk) and "attempts" is how many names to try
+    | before giving up.
+    |
+    */
+    'unique' => [
+        'disk' => null,
+        'attempts' => 100,
     ],
 ];

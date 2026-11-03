@@ -19,6 +19,9 @@ class RandomStrategy implements Strategy
             throw new InvalidArgumentException('Random length must be a whole number of at least 1');
         }
 
-        return Str::random($length);
+        $random = Str::random($length);
+
+        // Lowercase names avoid clashes on case-insensitive filesystems (macOS, Windows).
+        return ($options['lowercase'] ?? false) ? strtolower($random) : $random;
     }
 }

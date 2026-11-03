@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool hasStrategy(string $name)
  * @method static string sanitize(string $filename)
  * @method static \Blaspsoft\Onym\Pipeline pipeline()
+ * @method static string unique(?string $filename = null, ?string $extension = null, ?string $strategy = null, ?array<string, mixed> $options = null, ?string $disk = null, string $directory = '')
+ * @method static string fromUpload(\Symfony\Component\HttpFoundation\File\UploadedFile $file, ?string $strategy = null, ?array<string, mixed> $options = null, ?string $disk = null, ?string $directory = null)
  *
  * @see \Blaspsoft\Onym\Onym
  */

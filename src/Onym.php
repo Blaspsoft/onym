@@ -9,8 +9,11 @@ use Blaspsoft\Onym\Support\Sanitizer;
 use Closure;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class Onym
 {
@@ -27,10 +30,21 @@ class Onym
         'numbered' => ['name', 'number'],
     ];
 
+    /**
+     * Strategies that give a new name on every call, so unique() simply tries again.
+     *
+     * @var list<string>
+     */
+    public const RANDOM_STRATEGIES = ['random', 'uuid', 'ulid'];
+
+    /**
+     * @param  (Closure(): FilesystemFactory)|null  $filesystems  Resolves storage disks for unique().
+     */
     public function __construct(
         protected OnymManager $strategies,
         protected Repository $config,
         protected Sanitizer $sanitizer = new Sanitizer,
+        protected ?Closure $filesystems = null,
     ) {}
 
     /**
@@ -56,6 +70,137 @@ class Onym
         );
 
         return $this->generate($steps, $filename, $extension, $options);
+    }
+
+    /**
+     * Generate a filename that does not exist yet on a storage disk.
+     *
+     * The first candidate is what make() would return. If it is taken:
+     * "numbered" counts up (report_2, report_3), "random", "uuid" and "ulid"
+     * generate a new name, and every other strategy appends a counter
+     * (report-2, report-3).
+     *
+     * The check and your write are separate steps, so two requests at the same
+     * moment can still pick the same name; use random, uuid or ulid where that matters.
+     *
+     * @param  array<string, mixed>|null  $options
+     * @param  string|null  $disk  The disk to check (defaults to config "unique.disk", then the default disk).
+     * @param  string  $directory  The directory on the disk the file will be stored in.
+     */
+    public function unique(
+        ?string $filename = null,
+        ?string $extension = null,
+        ?string $strategy = null,
+        ?array $options = null,
+        ?string $disk = null,
+        string $directory = '',
+    ): string {
+        $strategy ??= $this->strategies->getDefaultDriver();
+        $options ??= [];
+        $merged = array_merge((array) $this->config->get("onym.options.{$strategy}", []), $options);
+
+        return $this->firstAvailable(function (int $attempt) use ($filename, $extension, $strategy, $options, $merged): string {
+            if ($attempt === 1 || in_array($strategy, self::RANDOM_STRATEGIES, true)) {
+                return $this->make($filename, $extension, $strategy, $options);
+            }
+
+            if ($strategy === 'numbered') {
+                return $this->make($filename, $extension, $strategy, [
+                    ...$options,
+                    'number' => $this->countFrom($merged['number'] ?? 1, $attempt - 1),
+                ]);
+            }
+
+            return $this->make($filename, $extension, $strategy, [
+                ...$options,
+                'suffix' => $this->stringOption($merged, 'suffix').$this->counter($merged, $attempt),
+            ]);
+        }, $disk, $directory);
+    }
+
+    /**
+     * Generate a filename for an uploaded file.
+     *
+     * The original name (without its extension) is used as the filename, and
+     * the extension comes from the file's detected MIME type rather than the
+     * name the client sent, falling back to the client's extension. Pass a
+     * disk or directory to make sure the name is not taken.
+     *
+     * @param  array<string, mixed>|null  $options
+     */
+    public function fromUpload(
+        UploadedFile $file,
+        ?string $strategy = null,
+        ?array $options = null,
+        ?string $disk = null,
+        ?string $directory = null,
+    ): string {
+        $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->guessExtension() ?: ($file->getClientOriginalExtension() ?: null);
+
+        if ($disk === null && $directory === null) {
+            return $this->make($filename, $extension, $strategy, $options);
+        }
+
+        return $this->unique($filename, $extension, $strategy, $options, $disk, $directory ?? '');
+    }
+
+    /**
+     * Try candidates until one does not exist on the disk.
+     *
+     * @internal Use unique().
+     *
+     * @param  Closure(int): string  $candidate  Receives the attempt number, starting at 1.
+     */
+    public function firstAvailable(Closure $candidate, ?string $disk = null, string $directory = ''): string
+    {
+        if ($this->filesystems === null) {
+            throw new RuntimeException('Onym::unique() needs Laravel\'s filesystem; resolve Onym from the container');
+        }
+
+        $storage = ($this->filesystems)()->disk($disk ?? $this->config->get('onym.unique.disk'));
+        $attempts = $this->config->get('onym.unique.attempts', 100);
+        $directory = trim($directory, '/');
+
+        if (! is_int($attempts) || $attempts < 1) {
+            throw new InvalidArgumentException('Onym config [unique.attempts] must be an integer of at least 1');
+        }
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $name = $candidate($attempt);
+
+            if (! $storage->exists($directory === '' ? $name : "{$directory}/{$name}")) {
+                return $name;
+            }
+        }
+
+        throw new RuntimeException("Onym could not find a free filename after {$attempts} attempts");
+    }
+
+    /**
+     * The separator and attempt number appended to deterministic names by unique().
+     *
+     * @internal
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function counter(array $options, int $attempt): string
+    {
+        return $this->stringOption($options, 'separator', (string) $this->config->get('onym.default_separator', '_')).$attempt;
+    }
+
+    /**
+     * Add to a number, keeping any zero-padding ("007" + 1 = "008").
+     */
+    protected function countFrom(mixed $start, int $add): string
+    {
+        if (! is_int($start) && ! (is_string($start) && ctype_digit($start))) {
+            throw new InvalidArgumentException('The [number] option must be a whole number of 0 or more');
+        }
+
+        $next = (string) ((int) $start + $add);
+
+        return is_string($start) ? str_pad($next, strlen($start), '0', STR_PAD_LEFT) : $next;
     }
 
     /**

@@ -1,7 +1,7 @@
 <?php
 
 return [
-   
+
     /*
     |--------------------------------------------------------------------------
     | Onym Default Filename
@@ -26,9 +26,31 @@ return [
     | Onym Default Separator
     |--------------------------------------------------------------------------
     |
-    | Configure the default separator to use.
+    | Placed between the pieces of a name, e.g. the date and the filename.
+    | A "separator" option for a strategy overrides it.
     */
     'default_separator' => '_',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onym Sanitize
+    |--------------------------------------------------------------------------
+    |
+    | Remove path separators, control characters and leading dots from the
+    | whole generated name, including prefixes, suffixes and date formats.
+    | Can also be turned off per call with ['sanitize' => false].
+    */
+    'sanitize' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onym Maximum Length
+    |--------------------------------------------------------------------------
+    |
+    | The maximum length of a generated filename in bytes, extension included.
+    | Most filesystems allow 255. Longer names are cut, keeping the extension.
+    */
+    'max_length' => 255,
 
     /*
     |--------------------------------------------------------------------------
@@ -36,8 +58,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure how converted files should be named by default.
-    | Available strategies: 'random', 'uuid', 'timestamp', 'date',
-    | 'prefix', 'suffix', 'numbered', 'slug', 'hash'
+    | Available strategies: 'random', 'uuid', 'ulid', 'timestamp', 'date',
+    | 'numbered', 'slug', 'hash', plus any registered with Onym::extend()
     |
     */
     'strategy' => 'random',
@@ -56,7 +78,8 @@ return [
     | - prefix: The prefix of the filename.
     | - suffix: The suffix of the filename.
     | - number: The number of the filename.
-    | - separator: The separator of the numbered filename.
+    | - separator: Placed between the pieces of a name (overrides
+    |   "default_separator" for that strategy). For slug, the word separator.
     | - algorithm: The algorithm of the hash.
     |
     */
@@ -71,10 +94,13 @@ return [
         |
         | Available options:
         | - length: The length of the random string.
+        | - lowercase: Use lowercase letters only (avoids clashes on
+        |   case-insensitive filesystems such as macOS and Windows).
         |
         */
         'random' => [
             'length' => 16,
+            'lowercase' => false,
             'prefix' => '',
             'suffix' => '',
         ],
@@ -92,6 +118,23 @@ return [
         |
         */
         'uuid' => [
+            'prefix' => '',
+            'suffix' => '',
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | ULID Strategy Options
+        |--------------------------------------------------------------------------
+        |
+        | A ULID is unique like a UUID but sorts by creation time.
+        |
+        | Available options:
+        | - lowercase: Lowercase the ULID.
+        |
+        */
+        'ulid' => [
+            'lowercase' => false,
             'prefix' => '',
             'suffix' => '',
         ],
@@ -139,12 +182,10 @@ return [
         |
         | Available options:
         | - number: The number of the filename.
-        | - separator: The separator of the numbered filename.
         |
         */
         'numbered' => [
             'number' => 1,
-            'separator' => '_',
             'prefix' => '',
             'suffix' => '',
         ],
@@ -175,7 +216,6 @@ return [
         |
         | Available options:
         | - algorithm: The algorithm of the hash.
-        | - length: The length of the hash.
         |
         */
         'hash' => [
@@ -183,5 +223,20 @@ return [
             'prefix' => '',
             'suffix' => '',
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onym Unique Names
+    |--------------------------------------------------------------------------
+    |
+    | Used by Onym::unique(). "disk" is the storage disk to check (null uses
+    | the default filesystem disk) and "attempts" is how many names to try
+    | before giving up.
+    |
+    */
+    'unique' => [
+        'disk' => null,
+        'attempts' => 100,
     ],
 ];

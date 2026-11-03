@@ -2,9 +2,9 @@
 
 namespace Blaspsoft\Onym\Tests;
 
-use InvalidArgumentException;
 use Blaspsoft\Onym\Onym;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 
 class SafeFilenameTest extends TestCase
@@ -14,7 +14,7 @@ class SafeFilenameTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->onym = new Onym();
+        $this->onym = $this->app->make(Onym::class);
     }
 
     protected function tearDown(): void
@@ -26,9 +26,9 @@ class SafeFilenameTest extends TestCase
     #[Test]
     public function it_strips_path_traversal_from_the_filename()
     {
-        $this->assertEquals('env_1.php', $this->onym->make('../../.env', 'numbered', 'php'));
+        $this->assertEquals('env_1.php', $this->onym->make('../../.env', 'php', 'numbered'));
         $this->assertEquals('etcpasswd_1.txt', $this->onym->numbered('/etc/passwd', 'txt'));
-        $this->assertEquals('ab_1.txt', $this->onym->numbered("a\\b", 'txt'));
+        $this->assertEquals('ab_1.txt', $this->onym->numbered('a\\b', 'txt'));
     }
 
     #[Test]
@@ -42,7 +42,7 @@ class SafeFilenameTest extends TestCase
     public function it_falls_back_to_the_default_filename_when_nothing_is_left()
     {
         $this->assertEquals('file_1.txt', $this->onym->numbered('../', 'txt'));
-        $this->assertEquals('file.pdf', $this->onym->make('..', 'not-a-strategy', 'pdf'));
+        $this->assertEquals('file_1.pdf', $this->onym->make('..', 'pdf', 'numbered'));
     }
 
     #[Test]
@@ -59,8 +59,8 @@ class SafeFilenameTest extends TestCase
         $this->assertEquals('report.tar.gz', $this->onym->slug('report', 'tar.gz'));
         $this->assertEquals('report.PDF', $this->onym->slug('report', 'PDF'));
         $this->assertEquals('report.txt', $this->onym->slug('report', ''));
-        $this->assertStringEndsWith('.txt.shell.php', $this->onym->uuid('txt/../../shell.php'));
-        $this->assertStringNotContainsString('/', $this->onym->uuid('txt/../../shell.php'));
+        $this->assertStringEndsWith('.txt.shell.php', $this->onym->uuid(null, 'txt/../../shell.php'));
+        $this->assertStringNotContainsString('/', $this->onym->uuid(null, 'txt/../../shell.php'));
     }
 
     #[Test]
@@ -74,7 +74,7 @@ class SafeFilenameTest extends TestCase
     public function it_rejects_a_random_length_below_one()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->onym->random('txt', ['length' => 0]);
+        $this->onym->random(null, 'txt', ['length' => 0]);
     }
 
     #[Test]
@@ -91,19 +91,19 @@ class SafeFilenameTest extends TestCase
     {
         Carbon::setTestNow('2024-03-15 14:30:00');
 
-        $this->assertEquals('log_2024-03-15_14-30-00_document_archive.pdf', $this->onym->make('document', 'timestamp', 'pdf', [
+        $this->assertEquals('log_2024-03-15_14-30-00_document_archive.pdf', $this->onym->make('document', 'pdf', 'timestamp', [
             'format' => 'Y-m-d_H-i-s', 'prefix' => 'log_', 'suffix' => '_archive',
         ]));
-        $this->assertEquals('dated_2024-03-15_document_version.pdf', $this->onym->make('document', 'date', 'pdf', [
+        $this->assertEquals('dated_2024-03-15_document_version.pdf', $this->onym->make('document', 'pdf', 'date', [
             'format' => 'Y-m-d', 'prefix' => 'dated_', 'suffix' => '_version',
         ]));
-        $this->assertEquals('rev_document_5_final.pdf', $this->onym->make('document', 'numbered', 'pdf', [
+        $this->assertEquals('rev_document_5_final.pdf', $this->onym->make('document', 'pdf', 'numbered', [
             'number' => 5, 'prefix' => 'rev_', 'suffix' => '_final',
         ]));
-        $this->assertEquals('post_my-document-name_draft.pdf', $this->onym->make('My Document Name', 'slug', 'pdf', [
+        $this->assertEquals('post_my-document-name_draft.pdf', $this->onym->make('My Document Name', 'pdf', 'slug', [
             'prefix' => 'post_', 'suffix' => '_draft',
         ]));
-        $this->assertEquals('hash_' . md5('document') . '_checksum.pdf', $this->onym->make('document', 'hash', 'pdf', [
+        $this->assertEquals('hash_'.md5('document').'_checksum.pdf', $this->onym->make('document', 'pdf', 'hash', [
             'algorithm' => 'md5', 'prefix' => 'hash_', 'suffix' => '_checksum',
         ]));
     }

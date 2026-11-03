@@ -2,9 +2,9 @@
 
 namespace Blaspsoft\Onym\Tests;
 
+use Blaspsoft\Onym\Onym;
 use DateTime;
 use InvalidArgumentException;
-use Blaspsoft\Onym\Onym;
 use PHPUnit\Framework\Attributes\Test;
 
 class OnymTest extends TestCase
@@ -14,7 +14,22 @@ class OnymTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->onym = new Onym();
+        $this->onym = $this->app->make(Onym::class);
+    }
+
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    protected function onymWith(array $options = [], ?string $separator = null): Onym
+    {
+        if ($options !== []) {
+            config()->set('onym.options', $options);
+        }
+        if ($separator !== null) {
+            config()->set('onym.default_separator', $separator);
+        }
+
+        return $this->app->make(Onym::class);
     }
 
     #[Test]
@@ -27,7 +42,7 @@ class OnymTest extends TestCase
     #[Test]
     public function it_generates_random_filenames()
     {
-        $filename = $this->onym->random('txt', ['length' => 8]);
+        $filename = $this->onym->random(null, 'txt', ['length' => 8]);
         $this->assertEquals(12, strlen($filename)); // 8 chars + '.txt'
         $this->assertStringEndsWith('.txt', $filename);
     }
@@ -35,14 +50,14 @@ class OnymTest extends TestCase
     #[Test]
     public function it_generates_uuid_filenames()
     {
-        $filename = $this->onym->uuid('txt');
+        $filename = $this->onym->uuid(null, 'txt');
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.txt$/', $filename);
     }
 
     #[Test]
     public function it_generates_timestamp_filenames()
     {
-        $now = new DateTime();
+        $now = new DateTime;
         $filename = $this->onym->timestamp('test', 'txt', ['format' => 'Y-m-d_H-i-s']);
         $this->assertStringStartsWith($now->format('Y-m-d'), $filename);
         $this->assertStringEndsWith('test.txt', $filename);
@@ -51,22 +66,22 @@ class OnymTest extends TestCase
     #[Test]
     public function it_generates_date_filenames()
     {
-        $now = new DateTime();
+        $now = new DateTime;
         $filename = $this->onym->date('test', 'txt', ['format' => 'Y-m-d']);
-        $this->assertEquals($now->format('Y-m-d') . '_test.txt', $filename);
+        $this->assertEquals($now->format('Y-m-d').'_test.txt', $filename);
     }
 
     #[Test]
     public function it_generates_numbered_filenames()
     {
-        $filename = $this->onym->numbered('test', 'txt', ['number' => 5]); 
+        $filename = $this->onym->numbered('test', 'txt', ['number' => 5]);
         $this->assertEquals('test_5.txt', $filename);
     }
 
     #[Test]
     public function it_generates_slug_filenames()
     {
-        $filename = $this->onym->slug('Test File Name', 'txt');    
+        $filename = $this->onym->slug('Test File Name', 'txt');
         $this->assertEquals('test-file-name.txt', $filename);
     }
 
@@ -74,7 +89,7 @@ class OnymTest extends TestCase
     public function it_generates_hash_filenames()
     {
         $filename = $this->onym->hash('test', 'txt', ['algorithm' => 'md5']);
-        $this->assertEquals(md5('test') . '.txt', $filename);
+        $this->assertEquals(md5('test').'.txt', $filename);
     }
 
     #[Test]
@@ -87,14 +102,14 @@ class OnymTest extends TestCase
     #[Test]
     public function it_allows_strategy_override_in_make_method()
     {
-        $filename = $this->onym->make('test', 'uuid', 'txt');
+        $filename = $this->onym->make('test', 'txt', 'uuid');
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.txt$/', $filename);
     }
 
     #[Test]
     public function it_allows_options_override_in_make_method()
     {
-        $filename = $this->onym->make('file', 'random', 'txt', ['length' => 8, 'prefix' => 'custom_']);
+        $filename = $this->onym->make('file', 'txt', 'random', ['length' => 8, 'prefix' => 'custom_']);
         $this->assertEquals(19, strlen($filename));
         $this->assertStringEndsWith('.txt', $filename);
         $this->assertEquals('custom_', substr($filename, 0, 7));
@@ -103,7 +118,7 @@ class OnymTest extends TestCase
     #[Test]
     public function it_allows_options_override_in_random_method()
     {
-        $filename = $this->onym->random('txt', ['length' => 8, 'prefix' => 'custom_']);
+        $filename = $this->onym->random(null, 'txt', ['length' => 8, 'prefix' => 'custom_']);
         $this->assertEquals(19, strlen($filename));
         $this->assertStringEndsWith('.txt', $filename);
         $this->assertEquals('custom_', substr($filename, 0, 7));
@@ -112,7 +127,7 @@ class OnymTest extends TestCase
     #[Test]
     public function it_allows_options_override_in_uuid_method()
     {
-        $filename = $this->onym->uuid('txt', ['prefix' => 'custom_']);
+        $filename = $this->onym->uuid(null, 'txt', ['prefix' => 'custom_']);
         $this->assertMatchesRegularExpression('/^custom_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.txt$/', $filename);
     }
 
@@ -140,14 +155,14 @@ class OnymTest extends TestCase
     #[Test]
     public function it_allows_options_override_in_slug_method()
     {
-        $filename = $this->onym->slug('filename', 'txt', ['prefix' => 'prefix_', 'suffix' => '_suffix']);        
+        $filename = $this->onym->slug('filename', 'txt', ['prefix' => 'prefix_', 'suffix' => '_suffix']);
         $this->assertEquals('prefix_filename_suffix.txt', $filename);
     }
 
     #[Test]
     public function it_passes_options_to_slug_strategy_in_make()
     {
-        $filename = $this->onym->make('My File Name', 'slug', 'txt', ['separator' => '_', 'prefix' => 'pre_']);
+        $filename = $this->onym->make('My File Name', 'txt', 'slug', ['separator' => '_', 'prefix' => 'pre_']);
         $this->assertEquals('pre_my_file_name.txt', $filename);
     }
 
@@ -157,13 +172,13 @@ class OnymTest extends TestCase
         $hash = md5('filename');
         $filename = $this->onym->hash('filename', 'txt', ['prefix' => 'prefix_', 'suffix' => '_suffix', 'algorithm' => 'md5']);
 
-        $this->assertEquals('prefix_' . $hash . '_suffix.txt', $filename);
+        $this->assertEquals('prefix_'.$hash.'_suffix.txt', $filename);
     }
 
     #[Test]
     public function it_allows_options_override_in_make_method_with_null_values()
     {
-        $filename = $this->onym->make('filename', 'random', 'txt', ['prefix' => null, 'suffix' => null, 'length' => null]);
+        $filename = $this->onym->make('filename', 'txt', 'random', ['prefix' => null, 'suffix' => null, 'length' => null]);
         $this->assertEquals(20, strlen($filename));
         $this->assertStringEndsWith('.txt', $filename);
     }
@@ -171,14 +186,14 @@ class OnymTest extends TestCase
     #[Test]
     public function it_allows_options_override_in_random_method_with_null_values()
     {
-        $filename = $this->onym->random('txt', ['prefix' => null, 'suffix' => null, 'length' => null]);
+        $filename = $this->onym->random(null, 'txt', ['prefix' => null, 'suffix' => null, 'length' => null]);
         $this->assertEquals(20, strlen($filename));
     }
 
     #[Test]
     public function it_allows_options_override_in_uuid_method_with_null_values()
     {
-        $filename = $this->onym->uuid('txt', ['prefix' => null, 'suffix' => null]);
+        $filename = $this->onym->uuid(null, 'txt', ['prefix' => null, 'suffix' => null]);
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.txt$/', $filename);
     }
 
@@ -215,7 +230,7 @@ class OnymTest extends TestCase
     {
         $hash = md5('filename');
         $filename = $this->onym->hash('filename', 'txt', ['prefix' => null, 'suffix' => null, 'algorithm' => null]);
-        $this->assertEquals($hash . '.txt', $filename);
+        $this->assertEquals($hash.'.txt', $filename);
     }
 
     #[Test]
@@ -224,8 +239,8 @@ class OnymTest extends TestCase
         $this->assertEquals($this->onym->slug('My File', 'txt'), $this->onym->slug('My File', 'txt', null));
         $this->assertEquals($this->onym->numbered('file', 'txt'), $this->onym->numbered('file', 'txt', null));
         $this->assertEquals($this->onym->hash('file', 'txt'), $this->onym->hash('file', 'txt', null));
-        $this->assertEquals(16, strlen(pathinfo($this->onym->random('txt', null), PATHINFO_FILENAME)));
-        $this->assertStringEndsWith('.txt', $this->onym->uuid('txt', null));
+        $this->assertEquals(16, strlen(pathinfo($this->onym->random(null, 'txt', null), PATHINFO_FILENAME)));
+        $this->assertStringEndsWith('.txt', $this->onym->uuid(null, 'txt', null));
         $this->assertStringEndsWith('_file.txt', $this->onym->date('file', 'txt', null));
         $this->assertStringEndsWith('_file.txt', $this->onym->timestamp('file', 'txt', null));
     }
@@ -233,7 +248,7 @@ class OnymTest extends TestCase
     #[Test]
     public function test_timestamp_uses_default_separator()
     {
-        $onym = new Onym([], '|'); // Inject custom defaultSeparator
+        $onym = $this->onymWith(separator: '|');
         $result = $onym->timestamp('filename', 'txt');
         $this->assertStringContainsString('|filename.txt', $result);
     }
@@ -241,7 +256,7 @@ class OnymTest extends TestCase
     #[Test]
     public function test_timestamp_overrides_separator_in_options()
     {
-        $onym = new Onym([], '|');
+        $onym = $this->onymWith(separator: '|');
         $result = $onym->timestamp('filename', 'txt', ['separator' => '.']);
         $this->assertStringContainsString('.filename.txt', $result);
         $this->assertStringNotContainsString('|filename.txt', $result);
@@ -250,7 +265,7 @@ class OnymTest extends TestCase
     #[Test]
     public function test_date_uses_default_separator()
     {
-        $onym = new Onym([], '|');
+        $onym = $this->onymWith(separator: '|');
         $result = $onym->date('filename', 'txt');
         $this->assertStringContainsString('|filename.txt', $result);
     }
@@ -258,7 +273,7 @@ class OnymTest extends TestCase
     #[Test]
     public function test_date_overrides_separator_in_options()
     {
-        $onym = new Onym([], '|');
+        $onym = $this->onymWith(separator: '|');
         $result = $onym->date('filename', 'txt', ['separator' => '.']);
         $this->assertStringContainsString('.filename.txt', $result);
         $this->assertStringNotContainsString('|filename.txt', $result);
@@ -267,8 +282,8 @@ class OnymTest extends TestCase
     #[Test]
     public function test_numbered_uses_default_separator()
     {
-        $onym = new Onym([
-            'numbered' => ['prefix' => '', 'suffix' => '', 'number' => 5] // No separator defined!
+        $onym = $this->onymWith([
+            'numbered' => ['prefix' => '', 'suffix' => '', 'number' => 5], // No separator defined!
         ], '|');
 
         $result = $onym->numbered('filename', 'txt');
@@ -279,7 +294,7 @@ class OnymTest extends TestCase
     #[Test]
     public function test_numbered_overrides_separator_in_options()
     {
-        $onym = new Onym([], '|');
+        $onym = $this->onymWith(separator: '|');
         $result = $onym->numbered('filename', 'txt', ['separator' => '-', 'number' => 5]);
         $this->assertStringContainsString('-5.txt', $result);
         $this->assertStringNotContainsString('|5.txt', $result);
@@ -288,8 +303,8 @@ class OnymTest extends TestCase
     #[Test]
     public function test_slug_uses_default_separator()
     {
-        $onym = new Onym([
-            'slug' => ['prefix' => '', 'suffix' => ''] // No separator defined!
+        $onym = $this->onymWith([
+            'slug' => ['prefix' => '', 'suffix' => ''], // No separator defined!
         ], '_');
 
         $result = $onym->slug('My File Name', 'txt');
@@ -302,7 +317,7 @@ class OnymTest extends TestCase
     #[Test]
     public function test_slug_overrides_separator_in_options()
     {
-        $onym = new Onym([], '_');
+        $onym = $this->onymWith(separator: '_');
         $result = $onym->slug('My File Name', 'txt', ['separator' => '.']);
         $this->assertStringContainsString('.', $result);
         $this->assertStringNotContainsString('_', $result);

@@ -16,12 +16,19 @@
     }
   ],
   "require": {
-    "php": "^8.0|^8.2|^8.3|^8.4",
-    "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0"
+    "php": "^8.2",
+    "illuminate/support": "^12.0|^13.0",
+    "ramsey/uuid": "^4.7"
   },
   "require-dev": {
+    "larastan/larastan": "^3.0",
+    "laravel/pint": "^1.18",
     "orchestra/testbench": "^10.0|^11.0",
-    "phpunit/phpunit": "^11.0|^12.0"
+    "phpunit/phpunit": "^11.5|^12.0"
+  },
+  "suggest": {
+    "illuminate/filesystem": "Needed for Onym::unique() (included in laravel/framework)",
+    "symfony/http-foundation": "Needed for Onym::fromUpload() (included in laravel/framework)"
   },
   "autoload": {
     "psr-4": {
@@ -35,7 +42,9 @@
   },
   "scripts": {
     "test": "vendor/bin/phpunit",
-    "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    "test-coverage": "vendor/bin/phpunit --coverage-html coverage",
+    "analyse": "vendor/bin/phpstan analyse",
+    "format": "vendor/bin/pint"
   },
   "config": {
     "sort-packages": true
@@ -48,6 +57,9 @@
       "aliases": {
         "Onym": "Blaspsoft\\Onym\\Facades\\Onym"
       }
+    },
+    "branch-alias": {
+      "dev-main": "2.x-dev"
     }
   }
 }

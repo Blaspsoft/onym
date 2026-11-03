@@ -10,6 +10,7 @@ use Closure;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 class Onym
 {
@@ -52,7 +53,7 @@ class Onym
         $defaultFilename = (string) $this->config->get('onym.default_filename', 'file');
         $defaultExtension = (string) $this->config->get('onym.default_extension', 'txt');
         $original = $filename ?? $defaultFilename;
-        $separator = (string) ($options['separator'] ?? $this->config->get('onym.default_separator', '_'));
+        $separator = $this->stringOption($options, 'separator', (string) $this->config->get('onym.default_separator', '_'));
 
         $context = new Context(
             original: $original,
@@ -68,10 +69,69 @@ class Onym
             self::PRESETS[$strategy] ?? [$strategy],
         );
 
-        return ($options['prefix'] ?? '')
+        $basename = $this->stringOption($options, 'prefix')
             .implode($separator, $parts)
-            .($options['suffix'] ?? '')
-            .'.'.$context->extension;
+            .$this->stringOption($options, 'suffix');
+
+        // Clean the whole name, so prefixes, suffixes, date formats and custom
+        // strategies cannot add path separators or make the file hidden either.
+        if ($options['sanitize'] ?? $this->config->get('onym.sanitize', true)) {
+            $basename = $this->sanitizer->filename($basename, $defaultFilename);
+        }
+
+        return $this->sanitizer->limit($basename, $context->extension, $this->maxLength()).'.'.$context->extension;
+    }
+
+    /**
+     * Make an existing filename safe to store: path separators, control
+     * characters and leading dots are removed, the extension is cleaned and
+     * the result is cut to the configured maximum length.
+     *
+     * sanitize('../../My Report.PDF') returns 'My Report.PDF'.
+     */
+    public function sanitize(string $filename): string
+    {
+        $defaultFilename = (string) $this->config->get('onym.default_filename', 'file');
+        $cleaned = $this->sanitizer->filename($filename, $defaultFilename);
+        $dot = strrpos($cleaned, '.');
+
+        if ($dot === false || $dot === 0) {
+            return $this->sanitizer->limit($cleaned, '', $this->maxLength());
+        }
+
+        $name = $this->sanitizer->filename(substr($cleaned, 0, $dot), $defaultFilename);
+        $extension = $this->sanitizer->extension(substr($cleaned, $dot + 1), '');
+
+        if ($extension === '') {
+            return $this->sanitizer->limit($name, '', $this->maxLength());
+        }
+
+        return $this->sanitizer->limit($name, $extension, $this->maxLength()).'.'.$extension;
+    }
+
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    protected function stringOption(array $options, string $key, string $default = ''): string
+    {
+        $value = $options[$key] ?? $default;
+
+        if (! is_string($value) && ! is_int($value) && ! is_float($value)) {
+            throw new InvalidArgumentException("Onym option [{$key}] must be a string, ".get_debug_type($value).' given');
+        }
+
+        return (string) $value;
+    }
+
+    protected function maxLength(): int
+    {
+        $maxLength = $this->config->get('onym.max_length', 255);
+
+        if (! is_int($maxLength) || $maxLength < 2) {
+            throw new InvalidArgumentException('Onym config [max_length] must be an integer of at least 2');
+        }
+
+        return $maxLength;
     }
 
     /**

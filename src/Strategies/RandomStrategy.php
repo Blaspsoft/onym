@@ -13,10 +13,10 @@ class RandomStrategy implements Strategy
 {
     public function part(Context $context, array $options): string
     {
-        $length = (int) ($options['length'] ?? 16);
+        $length = filter_var($options['length'] ?? 16, FILTER_VALIDATE_INT);
 
-        if ($length < 1) {
-            throw new InvalidArgumentException("Random length must be at least 1, {$length} given");
+        if ($length === false || $length < 1) {
+            throw new InvalidArgumentException('Random length must be a whole number of at least 1');
         }
 
         return Str::random($length);

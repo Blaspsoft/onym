@@ -32,6 +32,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Onym Sanitize
+    |--------------------------------------------------------------------------
+    |
+    | Remove path separators, control characters and leading dots from the
+    | whole generated name, including prefixes, suffixes and date formats.
+    | Can also be turned off per call with ['sanitize' => false].
+    */
+    'sanitize' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onym Maximum Length
+    |--------------------------------------------------------------------------
+    |
+    | The maximum length of a generated filename in bytes, extension included.
+    | Most filesystems allow 255. Longer names are cut, keeping the extension.
+    */
+    'max_length' => 255,
+
+    /*
+    |--------------------------------------------------------------------------
     | Onym Generation Settings
     |--------------------------------------------------------------------------
     |

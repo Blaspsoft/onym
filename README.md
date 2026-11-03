@@ -8,29 +8,39 @@
     </p>
 </p>
 
-# Onym - Flexible Filename Generator
+# Onym
 
-A flexible Laravel package for generating filenames using various strategies and options.
+Safe, predictable filenames for Laravel.
 
-## 🚀 Features
+```php
+use Blaspsoft\Onym\Facades\Onym;
 
-- ✅ **Flexible Filename Generation** – Generate filenames dynamically using various strategies.
-- 🎲 **Multiple Strategies** – Supports `random`, `uuid`, `timestamp`, `date`, `numbered`, `slug`, and `hash`.
-- 🔧 **Customizable Output** – Specify filename, extension, and additional formatting options.
-- 🎯 **Laravel-Friendly** – Designed to work seamlessly with Laravel's filesystem and configuration.
-- 📂 **Human-Readable or Random Names** – Readable names (`slug`, `date`, `numbered`) or hard-to-guess ones (`random`, `uuid`).
-- 🛡️ **Safe Output** – Path separators, control characters and leading dots are stripped from the filename and extension you pass in.
-- ⚙️ **Configurable Defaults** – Define global settings in `config/onym.php` for consistency across your application.
+Onym::slug('Q3 Report', 'pdf');                                // q3-report.pdf
+Onym::pipeline()->date()->slug()->random(6)->make('Q3 Report', 'pdf'); // 2024-03-15_q3-report_x7k2p9.pdf
+Onym::unique('report', 'pdf', 'numbered', directory: 'invoices');      // report_3.pdf if _1 and _2 exist
+Onym::fromUpload($request->file('avatar'), 'uuid');            // 9b2f…e1.png, extension from the file's real type
+```
+
+- **Strategies:** `random`, `uuid`, `ulid`, `timestamp`, `date`, `numbered`, `slug`, `hash`, or your own.
+- **Pipelines:** combine strategies into one name.
+- **Safe output:** path separators, control characters and leading dots are removed, and names are kept within 255 bytes.
+- **Unique names:** checked against any Laravel storage disk.
+- **Testing:** `Onym::fake()` with assertions.
+
+## Requirements
+
+- PHP 8.2+
+- Laravel 12 or 13
+
+Using an older version of Laravel? Onym 1.x supports Laravel 8 to 13. Upgrading from 1.x? See [UPGRADE.md](UPGRADE.md).
 
 ## Installation
-
-You can install the package via composer:
 
 ```bash
 composer require blaspsoft/onym
 ```
 
-You can publish the config file with:
+To change the defaults, publish the config file:
 
 ```bash
 php artisan vendor:publish --tag="onym-config"
@@ -38,325 +48,221 @@ php artisan vendor:publish --tag="onym-config"
 
 ## Usage
 
-`make()` takes its arguments in this order: filename, **strategy**, extension, options.
+Every strategy method takes the original filename, the extension, and an optional array of options:
 
 ```php
-Onym::make(?string $defaultFilename = null, ?string $strategy = null, ?string $extension = null, ?array $options = null)
+Onym::slug('Q3 Report', 'pdf', ['prefix' => 'archive_']); // archive_q3-report.pdf
 ```
 
-The strategy methods (`timestamp()`, `slug()` and so on) take the filename, then the extension, then options.
-
-> **Uniqueness:** only `random` and `uuid` produce a different name on every call. `timestamp`, `date`, `numbered`, `slug` and `hash` are deterministic for the same input, so check for an existing file before writing if collisions matter.
-
-### Available Strategies
-
-### Random Strategy
-
-Generates a random string of characters for the filename.
-
-**Options:**
-
-- `length` (int): The length of the random string
-  - Default: 16
-  - Example: `['length' => 8]` generates "a1b2c3d4.txt"
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'temp_']` generates "temp_a1b2c3d4.txt"
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_draft']` generates "a1b2c3d4_draft.txt"
+`make()` takes the strategy name as its third argument:
 
 ```php
-use Blaspsoft\Onym\Facades\Onym;
-
-// Generate an 8-character random filename with prefix and suffix
-Onym::make(strategy: 'random', options: [
-    'length' => 8,
-    'prefix' => 'temp_',
-    'suffix' => '_draft'
-]);
-// Result: "temp_a1b2c3d4_draft.txt"
-
-// You can also use the random method directly
-Onym::random(string $extension, ?array $options = [])
+Onym::make('Q3 Report', 'pdf', 'slug');
+Onym::make(filename: 'Q3 Report', extension: 'pdf', strategy: 'slug', options: ['prefix' => 'archive_']);
 ```
 
-### UUID Strategy
+Leave out the filename, extension or strategy to use the defaults from config (`file`, `txt` and `random`). You can pass the extension with or without a leading dot.
 
-Generates a UUID v4 (universally unique identifier) for the filename.
+### Strategies
 
-**Options:**
+Examples use `Onym::{strategy}('Q3 Report', 'pdf')` at 2024-03-15 14:30:05.
 
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'id_']` generates "id_123e4567-e89b-12d3-a456-426614174000.txt"
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_backup']` generates "123e4567-e89b-12d3-a456-426614174000_backup.txt"
+| Strategy | Example | Options |
+|---|---|---|
+| `random` | `x7k2p9Qa81LmZr4T.pdf` | `length` (16), `lowercase` (false) |
+| `uuid` | `9b2f61c4-3f0e-4a8e-b0f5-6f1d2a7c88e1.pdf` | |
+| `ulid` | `01JBZ8Q4R6V2K9T3M5N7P8W0XY.pdf` | `lowercase` (false) |
+| `timestamp` | `2024-03-15_14-30-05_Q3 Report.pdf` | `format` (`Y-m-d_H-i-s`) |
+| `date` | `2024-03-15_Q3 Report.pdf` | `format` (`Y-m-d`) |
+| `numbered` | `Q3 Report_1.pdf` | `number` (1) |
+| `slug` | `q3-report.pdf` | `separator` (`-`), the word separator |
+| `hash` | `56337e9426f8db384e3ebda650723693.pdf` | `algorithm` (`md5`) |
+
+`random`, `uuid` and `ulid` ignore the filename. `ulid` is unique like `uuid`, but sorts by creation time.
+
+Every strategy also accepts:
+
+| Option | Default | |
+|---|---|---|
+| `prefix` | `''` | Added before the name |
+| `suffix` | `''` | Added after the name, before the extension |
+| `separator` | `_` | Placed between the pieces of a name, e.g. date and filename |
+| `sanitize` | `true` | Clean the whole name (see [Safe filenames](#safe-filenames)) |
+
+Invalid options, such as a `length` of 0 or an unknown hash `algorithm`, throw an `InvalidArgumentException`. So does an unknown strategy name.
+
+### Pipelines
+
+A pipeline joins several strategies into one name:
 
 ```php
-use Blaspsoft\Onym\Facades\Onym;
-
-// Generate a UUID filename with prefix and suffix
-Onym::make(strategy: 'uuid', options: [
-    'prefix' => 'id_',
-    'suffix' => '_backup'
-]);
-// Result: "id_123e4567-e89b-12d3-a456-426614174000_backup.txt"
-
-// You can also use the uuid method directly
-Onym::uuid(string $extension, ?array $options = [])
+Onym::pipeline()
+    ->date('Ymd')
+    ->slug()
+    ->random(6)
+    ->prefix('inv_')
+    ->make('Q3 Report', 'pdf');
+// inv_20240315_q3-report_x7k2p9.pdf
 ```
 
-### Timestamp Strategy
+| Method | |
+|---|---|
+| `name()` | The original filename, cleaned |
+| `slug(?string $separator)` | The original filename as a slug |
+| `random(?int $length)`, `uuid()` | Random pieces |
+| `timestamp(?string $format)`, `date(?string $format)` | The current time |
+| `number(?int $number)` | A number |
+| `hash(?string $algorithm)` | A hash of the original filename |
+| `add($strategy, array $options = [])` | Any registered strategy, or a `Strategy` instance |
+| `separator()`, `prefix()`, `suffix()`, `sanitize()` | Settings for the whole name |
+| `make($filename, $extension)` | Generate the name |
+| `unique($filename, $extension, $disk, $directory)` | Generate a name that isn't taken (see [Unique names](#unique-names)) |
 
-Adds a timestamp to the filename using PHP's DateTime formatting.
+Each shortcut also accepts a full options array, e.g. `random(['length' => 6, 'lowercase' => true])`.
 
-**Options:**
-
-- `format` (string): PHP DateTime format string
-  - Default: 'Y-m-d_H-i-s'
-  - Common formats:
-    - `'Y-m-d_H-i-s'` → "2024-03-15_14-30-00"
-    - `'YmdHis'` → "20240315143000"
-    - `'U'` → Unix timestamp (e.g., "1710506400")
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'log_']`
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_archive']`
+Pipelines are immutable: every method returns a new pipeline, so you can share a base and extend it:
 
 ```php
-use Blaspsoft\Onym\Facades\Onym;
+$report = Onym::pipeline()->date()->slug();
 
-// Using timestamp with prefix and suffix
-Onym::make('document', 'timestamp', 'pdf', [
-    'format' => 'Y-m-d_H-i-s',
-    'prefix' => 'log_',
-    'suffix' => '_archive'
-]);
-// Result: "log_2024-03-15_14-30-00_document_archive.pdf"
-
-// You can also use the timestamp method directly
-Onym::timestamp(string $defaultFilename, string $extension, ?array $options = [])
+$report->make('Q3 Report', 'pdf');             // 2024-03-15_q3-report.pdf
+$report->number(2)->make('Q3 Report', 'pdf');  // 2024-03-15_q3-report_2.pdf
 ```
 
-### Date Strategy
+### Custom strategies
 
-Similar to timestamp but focused on date-only formats.
-
-**Options:**
-
-- `format` (string): PHP DateTime format string
-  - Default: 'Y-m-d'
-  - Common formats:
-    - `'Y-m-d'` → "2024-03-15"
-    - `'Ymd'` → "20240315"
-    - `'d-m-Y'` → "15-03-2024"
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'dated_']`
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_version']`
+A strategy returns its piece of the name. Onym adds the prefix, suffix and extension, and cleans the result.
 
 ```php
-use Blaspsoft\Onym\Facades\Onym;
+use Blaspsoft\Onym\Context;
+use Blaspsoft\Onym\Contracts\Strategy;
 
-// Using date with prefix and suffix
-Onym::make('document', 'date', 'pdf', [
-    'format' => 'Y-m-d',
-    'prefix' => 'dated_',
-    'suffix' => '_version'
-]);
-// Result: "dated_2024-03-15_document_version.pdf"
-
-// You can also use the date method directly
-Onym::date(string $defaultFilename, string $extension, ?array $options = [])
+class InvoiceNumber implements Strategy
+{
+    public function part(Context $context, array $options): string
+    {
+        return 'INV-'.str_pad((string) ($options['number'] ?? 1), 5, '0', STR_PAD_LEFT);
+    }
+}
 ```
 
-### Numbered Strategy
-
-Adds a number to the filename.
-
-**Options:**
-
-- `number` (int): The number to append to the filename
-  - Default: 1
-  - Example: `['number' => 5]`
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'rev_']`
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_final']`
+Register it in a service provider's `boot()` method, either as an instance or as a closure that receives the container:
 
 ```php
-use Blaspsoft\Onym\Facades\Onym;
+Onym::extend('invoice', new InvoiceNumber);
+Onym::extend('invoice', fn ($app) => $app->make(InvoiceNumber::class));
 
-// Adding numbers with prefix and suffix
-Onym::make('document', 'numbered', 'pdf', [
-    'number' => 5,
-    'prefix' => 'rev_',
-    'suffix' => '_final'
-]);
-// Result: "rev_document_5_final.pdf"
-
-// You can also use the numbered method directly
-Onym::numbered(string $defaultFilename, string $extension, ?array $options = [])
+Onym::make(null, 'pdf', 'invoice', ['number' => 42]); // INV-00042.pdf
+Onym::pipeline()->date('Ymd')->add('invoice')->make(null, 'pdf');
 ```
 
-### Slug Strategy
+`Context` gives each strategy:
 
-Converts the filename to a URL-friendly slug.
+| Property | |
+|---|---|
+| `$original` | The filename as it was passed in |
+| `$name` | The filename, cleaned |
+| `$extension` | The cleaned extension, without a dot |
+| `$separator` | The separator for this call |
+| `$fallbackName` | The default filename from config |
+| `$now` | The time of the call (a Carbon instance), shared by every piece of the name |
 
-**Options:**
+A pipeline can also be registered under a name:
 
-- `separator` (string): Character used between words
-  - Default: '-'
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'post_']`
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_draft']`
+```php
+Onym::extend('report', Onym::pipeline()->date('Ymd')->slug()->separator('-'));
+
+Onym::make('Q3 Report', 'pdf', 'report'); // 20240315-q3-report.pdf
+```
+
+### Unique names
+
+`unique()` returns a name that doesn't exist yet on a storage disk:
+
+```php
+Onym::unique('report', 'pdf', 'numbered', directory: 'invoices'); // report_3.pdf if report_1 and report_2 exist
+Onym::unique('Q3 Report', 'pdf', 'slug', disk: 's3');             // q3-report-2.pdf if q3-report.pdf exists
+Onym::pipeline()->date()->slug()->unique('Q3 Report', 'pdf');     // 2024-03-15_q3-report_2.pdf
+```
+
+- `numbered` counts up from its starting number, keeping zero-padding (`009`, then `010`).
+- `random`, `uuid`, `ulid`, and pipelines that include one of them, try a new name.
+- Every other strategy appends the separator and a counter.
+
+It checks the disk in `onym.unique.disk` (the default disk if that's `null`) and gives up after `onym.unique.attempts` tries (100) with a `RuntimeException`.
+
+> The check happens before you write the file, so two requests at the same moment can still pick the same name. Where that matters, use `random`, `uuid` or `ulid`.
+
+### Uploaded files
+
+`fromUpload()` names an uploaded file from its original name. The extension comes from the file's detected type, not the name the client sent:
+
+```php
+Onym::fromUpload($request->file('document'), 'slug');      // "Q3 Report.PDF" → q3-report.pdf
+Onym::fromUpload($request->file('avatar'), 'numbered');    // "avatar.php" that is really a PNG → avatar_1.png
+
+$name = Onym::fromUpload($request->file('document'), 'slug', directory: 'documents'); // also makes sure it's free
+$request->file('document')->storeAs('documents', $name);
+```
+
+### Safe filenames
+
+Onym removes path separators (`/` and `\`), control characters and leading dots:
+
+- **from the filename and extension you pass in**, always: `Onym::numbered('../../.env', 'php')` gives `env_1.php`.
+- **from the whole generated name**, unless `sanitize` is off. This covers prefixes, suffixes, date formats and custom strategies: `Onym::date('report', 'pdf', ['format' => 'Y/m/d'])` gives `20240315_report.pdf`.
+
+If you use a prefix as a folder on purpose, turn this off with `'sanitize' => false` in config or per call. It's usually better to pass the folder to `storeAs()` instead.
+
+Names are cut to `max_length` bytes (255), keeping the extension and never splitting a multibyte character.
+
+To clean a filename you already have:
+
+```php
+Onym::sanitize('../../My Report.PDF'); // My Report.PDF
+Onym::sanitize('.env');                // env
+```
+
+### Testing
 
 ```php
 use Blaspsoft\Onym\Facades\Onym;
 
-// Converting strings to slugs with prefix and suffix
-Onym::make('My Document Name', 'slug', 'pdf', [
-    'prefix' => 'post_',
-    'suffix' => '_draft'
-]);
-// Result: "post_my-document-name_draft.pdf"
+Onym::fake(['invoice.pdf', 'receipt.pdf']);
 
-// You can also use the slug method directly
-Onym::slug(string $defaultFilename, string $extension, ?array $options = [])
+$this->post('/invoices', [...]);
+
+Onym::assertGenerated('invoice.pdf');
+Storage::disk('s3')->assertExists('invoices/invoice.pdf');
 ```
 
-If the slug comes out empty (for example `'!!!'` or non-Latin text), the default filename from config is used instead.
+- **Queued names** are returned in order. Once they run out, or if you pass none, Onym generates real names. Every name is recorded either way.
+- **Callback:** `Onym::fake(fn ($filename, $extension, $steps) => "{$filename}.{$extension}")` names files with a callback instead. `$steps` lists the strategy names used, such as `['name', 'number']`.
 
-### Hash Strategy
+| Assertion | |
+|---|---|
+| `assertGenerated($name, ?int $times = null)` | `$name` can be a string or a callback that receives each name |
+| `assertNotGenerated($name)` | |
+| `assertGeneratedCount(int $count)` | |
+| `assertNothingGenerated()` | |
+| `generated()` | Every name generated, in order |
 
-Generates a hash of the filename using various algorithms.
+Date-based names use Carbon, so `Carbon::setTestNow()` freezes them too.
 
-**Options:**
+## Configuration
 
-- `algorithm` (string): The hashing algorithm to use
-  - Default: 'md5'
-  - Available algorithms:
-    - 'md5' (32 characters)
-    - 'sha1' (40 characters)
-    - 'sha256' (64 characters)
-    - Any algorithm supported by PHP's `hash()` function
-- `prefix` (string): String to prepend to the filename
-  - Default: ''
-  - Example: `['prefix' => 'hash_']`
-- `suffix` (string): String to append before the extension
-  - Default: ''
-  - Example: `['suffix' => '_checksum']`
-
-```php
-use Blaspsoft\Onym\Facades\Onym;
-
-// Using hash with prefix and suffix
-Onym::make('document', 'hash', 'pdf', [
-    'algorithm' => 'md5',
-    'prefix' => 'hash_',
-    'suffix' => '_checksum'
-]);
-// Result: "hash_86985e105f79b95d6bc918fb45ec7727_checksum.pdf"
-
-// You can also use the hash method directly
-Onym::hash(string $defaultFilename, string $extension, ?array $options = [])
-```
-
-## Customizing the Default Separator
-
-When creating an Onym instance manually (outside the facade),
-you can customize the default separator used between filename parts.
-
-```php
-use Blaspsoft\Onym\Onym;
-
-// Create an instance with a custom default separator
-$onym = new Onym([], '|');
-
-// Use the timestamp strategy with the custom separator
-$filename = $onym->timestamp('invoice', 'pdf');
-
-// Result: "2024-03-15|invoice.pdf"
-```
-
-## Global Configuration
-
-You can set default values for all strategies in your `config/onym.php` file:
-
-```php
-return [
-    // Default filename when none is provided
-    'default_filename' => 'file',
-
-    // Default extension when none is provided
-    'default_extension' => 'txt',
-    
-    // Default separator when none is provided
-    'default_separator' => '_',
-    
-    // Default strategy when none is specified
-    'strategy' => 'random',
-
-    // Default options for all strategies
-    'options' => [
-
-        'random' => [
-            'length' => 16,
-            'prefix' => '',
-            'suffix' => '',
-        ],
-
-        'timestamp' => [
-            'format' => 'Y-m-d_H-i-s',
-            'prefix' => '',
-            'suffix' => '',
-        ],
-
-        'date' => [
-            'format' => 'Y-m-d',
-            'prefix' => '',
-            'suffix' => '',
-        ],
-
-        'numbered' => [
-            'number' => 1,
-            'separator' => '_',
-            'prefix' => '',
-            'suffix' => '',
-        ],
-
-        'hash' => [
-            'algorithm' => 'md5',
-            'prefix' => '',
-            'suffix' => '',
-        ],
-    ],
-];
-```
-
-These defaults can be overridden on a per-call basis using the `options` parameter in the `make()` and in all strategy methods.
-
->⚠️ **Note:**  
->If you have previously published the `config/onym.php` file, you need to manually add the new `default_separator` key:
->
->```php
->'default_separator' => '_',
->```
->
->Otherwise, the fallback separator `_` will still be used automatically by the package.
-
+| Key | Default | |
+|---|---|---|
+| `default_filename` | `file` | Used when no filename is given, or when cleaning leaves nothing |
+| `default_extension` | `txt` | Used when no extension is given |
+| `default_separator` | `_` | Placed between the pieces of a name, unless a strategy's options set their own `separator` |
+| `strategy` | `random` | Used when no strategy is given |
+| `sanitize` | `true` | Clean the whole generated name |
+| `max_length` | `255` | Maximum filename length in bytes, extension included |
+| `options.{strategy}` | | Default options for each strategy, e.g. `options.random.length` |
+| `unique.disk` | `null` | Disk checked by `unique()` (`null` uses the default disk) |
+| `unique.attempts` | `100` | How many names `unique()` tries |
 
 ## License
 
-Onym is open-sourced software licensed under the [MIT license](LICENSE).
+Onym is open-sourced software licensed under the [MIT license](LICENSE.md).

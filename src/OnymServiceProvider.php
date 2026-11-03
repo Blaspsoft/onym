@@ -1,15 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Blaspsoft\Onym;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 class OnymServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap the application services.
-     */
-    public function boot()
+    public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -18,17 +18,17 @@ class OnymServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Register the application services.
-     */
-    public function register()
+    public function register(): void
     {
-        // Automatically apply the package configuration
         $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'onym');
 
-        // Register the main class to use with the facade
-        $this->app->bind('onym', function () {
-            return new Onym;
-        });
+        $this->app->singleton(OnymManager::class, fn (Application $app) => new OnymManager($app));
+
+        $this->app->singleton('onym', fn (Application $app) => new Onym(
+            $app->make(OnymManager::class),
+            $app->make('config'),
+        ));
+
+        $this->app->alias('onym', Onym::class);
     }
 }

@@ -1,27 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Blaspsoft\Onym\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static string make(?string $defaultFilename = null, ?string $strategy = null, ?string $extension = null, ?array $options = null)
- * @method static string random(string $extension, ?array $options = [])
- * @method static string uuid(string $extension, ?array $options = [])
- * @method static string timestamp(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string date(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string numbered(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string slug(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string hash(string $defaultFilename, string $extension, ?array $options = [])
+ * @method static string make(?string $filename = null, ?string $extension = null, ?string $strategy = null, ?array<string, mixed> $options = null)
+ * @method static string random(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static string uuid(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static string timestamp(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static string date(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static string numbered(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static string slug(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static string hash(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
+ * @method static \Blaspsoft\Onym\Onym extend(string $name, \Blaspsoft\Onym\Contracts\Strategy|\Closure $strategy)
+ * @method static bool hasStrategy(string $name)
+ *
+ * @see \Blaspsoft\Onym\Onym
  */
 class Onym extends Facade
 {
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
+    protected static function getFacadeAccessor(): string
     {
         return 'onym';
     }

@@ -1,288 +1,157 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Blaspsoft\Onym;
 
+use Blaspsoft\Onym\Contracts\Strategy;
+use Blaspsoft\Onym\Support\Sanitizer;
+use Closure;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
 
 class Onym
 {
     /**
-     * The strategy to use.
+     * Strategy names that are built from several pieces.
      *
-     * @var string
+     * Any other name is a single strategy registered with the manager.
+     *
+     * @var array<string, list<string>>
      */
-    public string $strategy;
+    public const PRESETS = [
+        'timestamp' => ['timestamp', 'name'],
+        'date' => ['date', 'name'],
+        'numbered' => ['name', 'number'],
+    ];
+
+    public function __construct(
+        protected OnymManager $strategies,
+        protected Repository $config,
+        protected Sanitizer $sanitizer = new Sanitizer,
+    ) {}
 
     /**
-     * The options to use.
+     * Generate a filename.
      *
-     * @var array
-     */
-    public array $options;
-
-    /**
-     * The default filename to use.
-     *
-     * @var string
-     */
-    public string $defaultFilename;
-
-    /**
-     * The default extension to use.
-     *
-     * @var string
-     */
-    public string $defaultExtension;
-
-    /**
-     * The default separator to use.
-     *
-     * @var string
-     */
-    public string $defaultSeparator;
-
-    public function __construct(array $options = [], ?string $defaultSeparator = null)
-    {
-        $this->strategy = config('onym.strategy', 'random');
-        $this->options = $options ?: config('onym.options', []);
-        $this->defaultFilename = config('onym.default_filename', 'file');
-        $this->defaultExtension = config('onym.default_extension', 'txt');
-        $this->defaultSeparator = $defaultSeparator ?? config('onym.default_separator', '_');
-    }
-
-    /**
-     * Generate a new filename based on the strategy and options.
-     *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param string|null $strategy The strategy to use (falls back to config value if null).
-     * @param array|null $options The options to use (merges with config options if provided).
-     * @return string The new filename.
+     * @param  string|null  $filename  The original name (defaults to config "default_filename").
+     * @param  string|null  $extension  The extension, with or without a leading dot (defaults to config "default_extension").
+     * @param  string|null  $strategy  The strategy name (defaults to config "strategy").
+     * @param  array<string, mixed>|null  $options  Merged over the config options for the strategy.
      */
     public function make(
-        ?string $defaultFilename = null, 
+        ?string $filename = null,
+        ?string $extension = null,
         ?string $strategy = null,
-        ?string $extension = null,  
-        ?array $options = null
-    )
-    {
-        $useStrategy = $strategy ?? $this->strategy;
-        $useOptions = $options !== null ? $this->mergeOptions($options, $useStrategy, $this->options) : $this->options[$useStrategy] ?? [];
-        $defaultFilename = $defaultFilename ?? $this->defaultFilename;
-        $extension = $extension ?? $this->defaultExtension;
+        ?array $options = null,
+    ): string {
+        $strategy ??= $this->strategies->getDefaultDriver();
+        $options = array_merge((array) $this->config->get("onym.options.{$strategy}", []), $options ?? []);
 
-        return match ($useStrategy) {
-            'random' => $this->random($extension, $useOptions),
-            
-            'uuid' => $this->uuid($extension, $useOptions),
-            
-            'timestamp' => $this->timestamp($defaultFilename, $extension, $useOptions),
-            
-            'date' => $this->date($defaultFilename, $extension, $useOptions),
-            
-            'numbered' => $this->numbered($defaultFilename, $extension, $useOptions),
-            
-            'slug' => $this->slug($defaultFilename, $extension, $useOptions),
-            
-            'hash' => $this->hash($defaultFilename, $extension, $useOptions),
-            
-            default => $this->cleanFilename($defaultFilename) . '.' . $this->cleanExtension($extension),
-        };
+        $defaultFilename = (string) $this->config->get('onym.default_filename', 'file');
+        $defaultExtension = (string) $this->config->get('onym.default_extension', 'txt');
+        $original = $filename ?? $defaultFilename;
+        $separator = (string) ($options['separator'] ?? $this->config->get('onym.default_separator', '_'));
+
+        $context = new Context(
+            original: $original,
+            name: $this->sanitizer->filename($original, $defaultFilename),
+            extension: $this->sanitizer->extension($extension ?? $defaultExtension, $defaultExtension),
+            separator: $separator,
+            fallbackName: $defaultFilename,
+            now: Carbon::now(),
+        );
+
+        $parts = array_map(
+            fn (string $step): string => $this->strategies->strategy($step)->part($context, $options),
+            self::PRESETS[$strategy] ?? [$strategy],
+        );
+
+        return ($options['prefix'] ?? '')
+            .implode($separator, $parts)
+            .($options['suffix'] ?? '')
+            .'.'.$context->extension;
     }
 
     /**
-     * Generate a random string of characters.
-     *
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The random string.
-     * @throws \InvalidArgumentException If the length is less than 1.
+     * @param  array<string, mixed>|null  $options
      */
-    public function random(string $extension, ?array $options = [])
+    public function random(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'random', $this->options);
-        $length = (int) ($options['length'] ?? 16);
-
-        if ($length < 1) {
-            throw new InvalidArgumentException("Random length must be at least 1, {$length} given");
-        }
-
-        $filename = Str::random($length);
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'random', $options);
     }
 
     /**
-     * Generate a UUID string.
-     *
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The UUID string.
+     * @param  array<string, mixed>|null  $options
      */
-    public function uuid(string $extension, ?array $options = [])
+    public function uuid(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'uuid', $this->options);
-        $filename = (string) Str::uuid();
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'uuid', $options);
     }
 
     /**
-     * Generate a timestamp string.
-     *
-     * @param string $defaultFilename The original filename.
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The timestamp string.
+     * @param  array<string, mixed>|null  $options
      */
-    public function timestamp(string $defaultFilename, string $extension, ?array $options = [])
+    public function timestamp(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'timestamp', $this->options);
-
-        $format = $options['format'] ?? 'Y-m-d_H-i-s';
-        $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = Carbon::now()->format($format) . $separator . $this->cleanFilename($defaultFilename);
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'timestamp', $options);
     }
 
     /**
-     * Generate a date string.
-     *
-     * @param string $defaultFilename The original filename.
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The date string.
+     * @param  array<string, mixed>|null  $options
      */
-    public function date(string $defaultFilename, string $extension, ?array $options = [])
+    public function date(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'date', $this->options);
-        $format = $options['format'] ?? 'Y-m-d';
-        $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = Carbon::now()->format($format) . $separator . $this->cleanFilename($defaultFilename);
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'date', $options);
     }
 
     /**
-     * Generate a numbered string.
-     *
-     * @param string $defaultFilename The original filename.
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The numbered string.
+     * @param  array<string, mixed>|null  $options
      */
-    public function numbered(string $defaultFilename, string $extension, ?array $options = [])
+    public function numbered(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'numbered', $this->options);
-        $number = $options['number'] ?? 1;
-        $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = $this->cleanFilename($defaultFilename) . $separator . $number;
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'numbered', $options);
     }
 
     /**
-     * Generate a slug string.
-     *
-     * @param string $defaultFilename The original filename.
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The slug string.
+     * @param  array<string, mixed>|null  $options
      */
-    public function slug(string $defaultFilename, string $extension, ?array $options = [])
+    public function slug(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'slug', $this->options);
-        $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = Str::slug($defaultFilename, $separator);
-
-        // Names with nothing to slug (e.g. "!!!" or non-Latin text) fall back to the default filename.
-        if ($filename === '') {
-            $filename = Str::slug($this->defaultFilename, $separator) ?: 'file';
-        }
-
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'slug', $options);
     }
 
     /**
-     * Generate a hash string.
-     *
-     * @param string $defaultFilename The original filename.
-     * @param string $extension The extension of the file.
-     * @param array|null $options The options array.
-     * @return string The hash string.
+     * @param  array<string, mixed>|null  $options
      */
-    public function hash(string $defaultFilename, string $extension, ?array $options = [])
+    public function hash(?string $filename = null, ?string $extension = null, ?array $options = null): string
     {
-        $options = $this->mergeOptions($options, 'hash', $this->options);
-        $algorithm = $options['algorithm'] ?? 'md5';
-
-        if (!in_array($algorithm, hash_algos())) {
-            throw new \InvalidArgumentException("Invalid hash algorithm: {$algorithm}");
-        }
-
-        $hash = hash($algorithm, $defaultFilename);
-        $filename = $hash;
-        return $this->applyAffixes($filename, $extension, $options);
+        return $this->make($filename, $extension, 'hash', $options);
     }
 
     /**
-     * Merge options with the default options.
+     * Register a custom strategy.
      *
-     * @param array|null $options The options to merge.
-     * @param string $strategy The strategy being used.
-     * @param array $defaultOptions The default options.
-     * @return array The merged options.
+     * Pass a Strategy instance, or a closure that receives the container and returns one.
+     *
+     * @param  Strategy|Closure(Container): Strategy  $strategy
      */
-    private function mergeOptions(?array $options, string $strategy, array $defaultOptions): array
+    public function extend(string $name, Strategy|Closure $strategy): static
     {
-        $strategyOptions = $defaultOptions[$strategy] ?? [];
-        return array_merge($strategyOptions, $options ?? []);
+        $this->strategies->extend(
+            $name,
+            fn (Container $app): Strategy => $strategy instanceof Strategy ? $strategy : $strategy($app),
+        );
+
+        return $this;
     }
 
     /**
-     * Strip path separators, control characters and leading dots from a
-     * caller-supplied filename so it cannot escape a directory or become hidden.
-     *
-     * @param string $filename
-     * @return string
+     * Whether a strategy name can be used with make().
      */
-    private function cleanFilename(string $filename): string
+    public function hasStrategy(string $name): bool
     {
-        $filename = preg_replace('/[\x00-\x1F\x7F\/\\\\]/u', '', $filename) ?? '';
-        $filename = ltrim(trim($filename), '.');
-
-        return $filename === '' ? $this->defaultFilename : $filename;
-    }
-
-    /**
-     * Reduce an extension to letters, digits and single inner dots
-     * (so "tar.gz" survives but ".pdf" and "txt/../x" do not).
-     *
-     * @param string $extension
-     * @return string
-     */
-    private function cleanExtension(string $extension): string
-    {
-        $extension = preg_replace('/[^A-Za-z0-9.]/', '', $extension) ?? '';
-        $extension = trim(preg_replace('/\.{2,}/', '.', $extension) ?? '', '.');
-
-        return $extension === '' ? $this->defaultExtension : $extension;
-    }
-
-    /**
-     * Apply prefix and suffix to filename
-     *
-     * @param string $filename
-     * @param string $extension
-     * @param array|null $options
-     * @return string
-     */
-    private function applyAffixes(string $filename, string $extension, ?array $options = []): string
-    {
-        if (isset($options['prefix'])) {
-            $filename = $options['prefix'] . $filename;
-        }
-        if (isset($options['suffix'])) {
-            $filename = $filename . $options['suffix'];
-        }
-        return $filename . '.' . $this->cleanExtension($extension);
+        return isset(self::PRESETS[$name]) || $this->strategies->has($name);
     }
 }

@@ -5,7 +5,7 @@ namespace Blaspsoft\Onym\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static string make(string $defaultFilename, ?string $strategy = null, ?string $extension = null, ?array $options = null)
+ * @method static string make(?string $defaultFilename = null, ?string $strategy = null, ?string $extension = null, ?array $options = null)
  * @method static string random(string $extension, ?array $options = [])
  * @method static string uuid(string $extension, ?array $options = [])
  * @method static string timestamp(string $defaultFilename, string $extension, ?array $options = [])

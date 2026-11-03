@@ -1,7 +1,7 @@
 <p align="center">
     <img src="./.github/assets/icon.png" alt="Onym Icon" width="150" height="150"/>
     <p align="center">
-        <a href="https://github.com/Blaspsoft/blasp/actions/workflows/main.yml"><img alt="GitHub Workflow Status (main)" src="https://github.com/Blaspsoft/onym/actions/workflows/main.yml/badge.svg"></a>
+        <a href="https://github.com/Blaspsoft/onym/actions/workflows/main.yml"><img alt="GitHub Workflow Status (main)" src="https://github.com/Blaspsoft/onym/actions/workflows/main.yml/badge.svg"></a>
         <a href="https://packagist.org/packages/blaspsoft/onym"><img alt="Total Downloads" src="https://img.shields.io/packagist/dt/blaspsoft/onym"></a>
         <a href="https://packagist.org/packages/blaspsoft/onym"><img alt="Latest Version" src="https://img.shields.io/packagist/v/blaspsoft/onym"></a>
         <a href="https://packagist.org/packages/blaspsoft/onym"><img alt="License" src="https://img.shields.io/packagist/l/blaspsoft/onym"></a>
@@ -18,9 +18,9 @@ A flexible Laravel package for generating filenames using various strategies and
 - 🎲 **Multiple Strategies** – Supports `random`, `uuid`, `timestamp`, `date`, `numbered`, `slug`, and `hash`.
 - 🔧 **Customizable Output** – Specify filename, extension, and additional formatting options.
 - 🎯 **Laravel-Friendly** – Designed to work seamlessly with Laravel's filesystem and configuration.
-- 📂 **Human-Readable & Unique Names** – Ensures filenames are structured, collision-free, and easy to understand.
+- 📂 **Human-Readable or Random Names** – Readable names (`slug`, `date`, `numbered`) or hard-to-guess ones (`random`, `uuid`).
+- 🛡️ **Safe Output** – Path separators, control characters and leading dots are stripped from the filename and extension you pass in.
 - ⚙️ **Configurable Defaults** – Define global settings in `config/onym.php` for consistency across your application.
-- 🔌 **Extensible & Developer-Friendly** – Easily add custom filename strategies or modify existing ones.
 
 ## Installation
 
@@ -37,6 +37,16 @@ php artisan vendor:publish --tag="onym-config"
 ```
 
 ## Usage
+
+`make()` takes its arguments in this order: filename, **strategy**, extension, options.
+
+```php
+Onym::make(?string $defaultFilename = null, ?string $strategy = null, ?string $extension = null, ?array $options = null)
+```
+
+The strategy methods (`timestamp()`, `slug()` and so on) take the filename, then the extension, then options.
+
+> **Uniqueness:** only `random` and `uuid` produce a different name on every call. `timestamp`, `date`, `numbered`, `slug` and `hash` are deterministic for the same input, so check for an existing file before writing if collisions matter.
 
 ### Available Strategies
 
@@ -121,7 +131,7 @@ Adds a timestamp to the filename using PHP's DateTime formatting.
 use Blaspsoft\Onym\Facades\Onym;
 
 // Using timestamp with prefix and suffix
-Onym::make('document', 'pdf', 'timestamp', [
+Onym::make('document', 'timestamp', 'pdf', [
     'format' => 'Y-m-d_H-i-s',
     'prefix' => 'log_',
     'suffix' => '_archive'
@@ -143,7 +153,7 @@ Similar to timestamp but focused on date-only formats.
   - Common formats:
     - `'Y-m-d'` → "2024-03-15"
     - `'Ymd'` → "20240315"
-    - `'Y/m/d'` → "2024/03/15"
+    - `'d-m-Y'` → "15-03-2024"
 - `prefix` (string): String to prepend to the filename
   - Default: ''
   - Example: `['prefix' => 'dated_']`
@@ -155,7 +165,7 @@ Similar to timestamp but focused on date-only formats.
 use Blaspsoft\Onym\Facades\Onym;
 
 // Using date with prefix and suffix
-Onym::make('document', 'pdf', 'date', [
+Onym::make('document', 'date', 'pdf', [
     'format' => 'Y-m-d',
     'prefix' => 'dated_',
     'suffix' => '_version'
@@ -186,7 +196,7 @@ Adds a number to the filename.
 use Blaspsoft\Onym\Facades\Onym;
 
 // Adding numbers with prefix and suffix
-Onym::make('document', 'pdf', 'numbered', [
+Onym::make('document', 'numbered', 'pdf', [
     'number' => 5,
     'prefix' => 'rev_',
     'suffix' => '_final'
@@ -203,6 +213,8 @@ Converts the filename to a URL-friendly slug.
 
 **Options:**
 
+- `separator` (string): Character used between words
+  - Default: '-'
 - `prefix` (string): String to prepend to the filename
   - Default: ''
   - Example: `['prefix' => 'post_']`
@@ -214,7 +226,7 @@ Converts the filename to a URL-friendly slug.
 use Blaspsoft\Onym\Facades\Onym;
 
 // Converting strings to slugs with prefix and suffix
-Onym::make('My Document Name', 'pdf', 'slug', [
+Onym::make('My Document Name', 'slug', 'pdf', [
     'prefix' => 'post_',
     'suffix' => '_draft'
 ]);
@@ -223,6 +235,8 @@ Onym::make('My Document Name', 'pdf', 'slug', [
 // You can also use the slug method directly
 Onym::slug(string $defaultFilename, string $extension, ?array $options = [])
 ```
+
+If the slug comes out empty (for example `'!!!'` or non-Latin text), the default filename from config is used instead.
 
 ### Hash Strategy
 
@@ -248,7 +262,7 @@ Generates a hash of the filename using various algorithms.
 use Blaspsoft\Onym\Facades\Onym;
 
 // Using hash with prefix and suffix
-Onym::make('document', 'pdf', 'hash', [
+Onym::make('document', 'hash', 'pdf', [
     'algorithm' => 'md5',
     'prefix' => 'hash_',
     'suffix' => '_checksum'
@@ -324,7 +338,6 @@ return [
 
         'hash' => [
             'algorithm' => 'md5',
-            'length' => 16,
             'prefix' => '',
             'suffix' => '',
         ],
@@ -346,4 +359,4 @@ These defaults can be overridden on a per-call basis using the `options` paramet
 
 ## License
 
-Blasp is open-sourced software licensed under the [MIT license](LICENSE).
+Onym is open-sourced software licensed under the [MIT license](LICENSE).

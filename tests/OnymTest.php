@@ -219,6 +219,18 @@ class OnymTest extends TestCase
     }
 
     #[Test]
+    public function it_falls_back_to_config_options_when_options_are_null()
+    {
+        $this->assertEquals($this->onym->slug('My File', 'txt'), $this->onym->slug('My File', 'txt', null));
+        $this->assertEquals($this->onym->numbered('file', 'txt'), $this->onym->numbered('file', 'txt', null));
+        $this->assertEquals($this->onym->hash('file', 'txt'), $this->onym->hash('file', 'txt', null));
+        $this->assertEquals(16, strlen(pathinfo($this->onym->random('txt', null), PATHINFO_FILENAME)));
+        $this->assertStringEndsWith('.txt', $this->onym->uuid('txt', null));
+        $this->assertStringEndsWith('_file.txt', $this->onym->date('file', 'txt', null));
+        $this->assertStringEndsWith('_file.txt', $this->onym->timestamp('file', 'txt', null));
+    }
+
+    #[Test]
     public function test_timestamp_uses_default_separator()
     {
         $onym = new Onym([], '|'); // Inject custom defaultSeparator

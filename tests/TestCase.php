@@ -2,8 +2,8 @@
 
 namespace Blaspsoft\Onym\Tests;
 
-use Orchestra\Testbench\TestCase as Orchestra;
 use Blaspsoft\Onym\OnymServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {

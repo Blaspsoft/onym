@@ -114,6 +114,17 @@ class FakeTest extends TestCase
     }
 
     #[Test]
+    public function pipelines_built_before_faking_use_the_fake(): void
+    {
+        $pipeline = Onym::pipeline()->date()->slug();
+
+        Onym::fake(['faked.pdf']);
+
+        $this->assertSame('faked.pdf', $pipeline->make('Q3 Report', 'pdf'));
+        Onym::assertGenerated('faked.pdf');
+    }
+
+    #[Test]
     public function faking_again_starts_fresh(): void
     {
         Onym::fake(['one.txt']);

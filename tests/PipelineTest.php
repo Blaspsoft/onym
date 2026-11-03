@@ -110,8 +110,18 @@ class PipelineTest extends TestCase
     #[Test]
     public function all_pieces_share_the_same_moment(): void
     {
-        $name = Onym::pipeline()->timestamp('His.u')->timestamp('His.u')->sanitize(false)->make('x', 'txt');
-        [$first, $second] = explode('_', pathinfo($name, PATHINFO_FILENAME));
+        $advanceClock = new class implements Strategy
+        {
+            public function part(Context $context, array $options): string
+            {
+                Carbon::setTestNow(Carbon::now()->addSeconds(5));
+
+                return 'between';
+            }
+        };
+
+        $name = Onym::pipeline()->timestamp('His.u')->add($advanceClock)->timestamp('His.u')->sanitize(false)->make('x', 'txt');
+        [$first, , $second] = explode('_', pathinfo($name, PATHINFO_FILENAME));
 
         $this->assertSame($first, $second);
     }
@@ -151,6 +161,26 @@ class PipelineTest extends TestCase
     public function the_whole_name_is_cleaned(): void
     {
         $this->assertSame('20240315_env.txt', Onym::pipeline()->date('Y/m/d')->name()->prefix('../')->separator('_')->make('../.env', 'txt'));
+    }
+
+    #[Test]
+    public function a_named_pipeline_uses_the_callers_separator_when_it_has_none(): void
+    {
+        Onym::extend('report', Onym::pipeline()->date('Ymd')->slug());
+
+        $this->assertSame('20240315-q3-report.pdf', Onym::make('Q3 Report', 'pdf', 'report', ['separator' => '-']));
+        $this->assertSame('20240315.q3-report_7.pdf', Onym::pipeline()->add('report', ['separator' => '.'])->number(7)->make('Q3 Report', 'pdf'));
+    }
+
+    #[Test]
+    public function a_pipeline_that_contains_itself_throws(): void
+    {
+        Onym::extend('loop', fn () => Onym::pipeline()->add('loop'));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot contain itself');
+
+        Onym::make('x', 'txt', 'loop');
     }
 
     #[Test]

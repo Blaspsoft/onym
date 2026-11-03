@@ -50,6 +50,14 @@ class Sanitizer
             return $name;
         }
 
-        return rtrim(mb_strcut($name, 0, $room, 'UTF-8'), ". \t");
+        $cut = rtrim(mb_strcut($name, 0, $room, 'UTF-8'), ". \t");
+
+        if ($cut === '') {
+            throw new InvalidArgumentException(
+                "The name [{$name}] cannot be shortened to fit within {$maxLength} bytes"
+            );
+        }
+
+        return $cut;
     }
 }

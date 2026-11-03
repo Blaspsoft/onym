@@ -93,7 +93,7 @@ These need no changes, but are worth knowing about:
 - **Pipelines** that combine strategies: `Onym::pipeline()->date()->slug()->random(6)->make('Q3 Report', 'pdf')`
 - **Custom strategies** with `Onym::extend()`
 - **`Onym::unique()`**, which checks a storage disk for a free name
-- **`Onym::fromUpload()`**, which takes the extension from the file's detected type
+- **`Onym::fromUpload()`**, which takes the extension from the file's detected type (falling back to the client's extension if none is detected)
 - **The `ulid` strategy**, and a `lowercase` option for `random` and `ulid`
 - **`Onym::sanitize()`** for filenames you already have
 - **`Onym::fake()`** and assertions for tests

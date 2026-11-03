@@ -66,6 +66,25 @@ class UniqueTest extends TestCase
     }
 
     #[Test]
+    public function long_names_keep_room_for_the_counter(): void
+    {
+        config()->set('onym.max_length', 20);
+        Storage::disk('local')->put('aaaaaaaaaaaaaaaa.pdf', '');
+
+        $this->assertSame('aaaaaaaaaaaaaa-2.pdf', Onym::unique(str_repeat('a', 40), 'pdf', 'slug'));
+        $this->assertSame('aaaaaaaaaaaaaaaa.pdf', Onym::slug(str_repeat('a', 40), 'pdf'));
+    }
+
+    #[Test]
+    public function long_pipeline_names_keep_room_for_the_counter(): void
+    {
+        config()->set('onym.max_length', 20);
+        Storage::disk('local')->put('aaaaaaaaaaaaaaaa.pdf', '');
+
+        $this->assertSame('aaaaaaaaaaaaaa_2.pdf', Onym::pipeline()->name()->unique(str_repeat('a', 40), 'pdf'));
+    }
+
+    #[Test]
     public function the_counter_goes_after_an_existing_suffix(): void
     {
         Storage::disk('local')->put('2024-03-15_report_final.pdf', '');

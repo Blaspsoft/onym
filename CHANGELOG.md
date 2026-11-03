@@ -8,7 +8,7 @@ See [UPGRADE.md](UPGRADE.md) for breaking changes.
 - Pipelines: `Onym::pipeline()` combines strategies into one name, and can be registered as a named strategy.
 - Custom strategies with `Onym::extend()` and the `Strategy` contract.
 - `Onym::unique()` and `Pipeline::unique()` find a name that isn't taken on a storage disk.
-- `Onym::fromUpload()` names uploaded files, taking the extension from the detected MIME type.
+- `Onym::fromUpload()` names uploaded files, taking the extension from the detected MIME type (falling back to the client's extension if none is detected).
 - The `ulid` strategy, and a `lowercase` option for `random` and `ulid`.
 - `Onym::sanitize()` cleans an existing filename.
 - `Onym::fake()` with `assertGenerated()`, `assertNotGenerated()`, `assertGeneratedCount()` and `assertNothingGenerated()`.
@@ -20,7 +20,7 @@ See [UPGRADE.md](UPGRADE.md) for breaking changes.
 - The whole generated name is cleaned, including prefixes, suffixes and date formats.
 - Names are limited to 255 bytes by default.
 - The package config no longer sets a `separator` for `numbered`, so `default_separator` applies to it.
-- Requires PHP 8.2+ and Laravel 12+.
+- Requires PHP 8.2+ and Laravel 12 or 13.
 
 ### Fixed
 - Unknown strategies and invalid options throw instead of producing odd filenames.

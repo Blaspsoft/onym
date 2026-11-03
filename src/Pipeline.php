@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Blaspsoft\Onym;
 
 use Blaspsoft\Onym\Contracts\Strategy;
+use Blaspsoft\Onym\Facades\Onym as OnymFacade;
+use InvalidArgumentException;
 
 /**
  * Joins several strategies into one filename.
@@ -28,6 +30,9 @@ final class Pipeline implements Strategy
 
     /** @var array<string, mixed> */
     private array $options = [];
+
+    /** Set while part() runs, to catch a pipeline that contains itself. */
+    private bool $resolving = false;
 
     public function __construct(private readonly Onym $onym) {}
 
@@ -140,7 +145,7 @@ final class Pipeline implements Strategy
      */
     public function make(?string $filename = null, ?string $extension = null): string
     {
-        return $this->onym->generate($this->steps, $filename, $extension, $this->options);
+        return $this->onym()->generate($this->steps, $filename, $extension, $this->options);
     }
 
     /**
@@ -156,14 +161,12 @@ final class Pipeline implements Strategy
             fn (array $step): bool => is_string($step[0]) && in_array($step[0], Onym::RANDOM_STRATEGIES, true),
         );
 
-        return $this->onym->firstAvailable(function (int $attempt) use ($filename, $extension, $regenerates): string {
+        return $this->onym()->firstAvailable(function (int $attempt) use ($filename, $extension, $regenerates): string {
             if ($attempt === 1 || $regenerates) {
                 return $this->make($filename, $extension);
             }
 
-            $suffix = (string) ($this->options['suffix'] ?? '');
-
-            return $this->suffix($suffix.$this->onym->counter($this->options, $attempt))->make($filename, $extension);
+            return $this->with('counter', $this->onym->counter($this->options, $attempt))->make($filename, $extension);
         }, $disk, $directory);
     }
 
@@ -173,9 +176,18 @@ final class Pipeline implements Strategy
      */
     public function part(Context $context, array $options): string
     {
-        $separator = (string) ($this->options['separator'] ?? $context->separator);
+        if ($this->resolving) {
+            throw new InvalidArgumentException('An Onym pipeline cannot contain itself');
+        }
 
-        return implode($separator, $this->onym->parts($this->steps, $context));
+        $separator = (string) ($this->options['separator'] ?? $options['separator'] ?? $context->separator);
+        $this->resolving = true;
+
+        try {
+            return implode($separator, $this->onym->parts($this->steps, $context));
+        } finally {
+            $this->resolving = false;
+        }
     }
 
     /**
@@ -184,6 +196,17 @@ final class Pipeline implements Strategy
     public function steps(): array
     {
         return $this->steps;
+    }
+
+    /**
+     * The Onym instance to generate with. A pipeline built before Onym::fake()
+     * still goes through the fake, so its names are queued and recorded.
+     */
+    private function onym(): Onym
+    {
+        $root = OnymFacade::isFake() ? OnymFacade::getFacadeRoot() : null;
+
+        return $root instanceof Onym ? $root : $this->onym;
     }
 
     private function with(string $key, mixed $value): self

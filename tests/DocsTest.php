@@ -45,7 +45,9 @@ class DocsTest extends TestCase
         $this->assertSame('q3-report.pdf', Onym::slug('Q3 Report', 'pdf'));
         $this->assertSame('2024-03-15_q3-report_x7k2p9.pdf', Onym::pipeline()->date()->slug()->random(6)->make('Q3 Report', 'pdf'));
         $this->assertSame('report_3.pdf', Onym::unique('report', 'pdf', 'numbered', directory: 'invoices'));
-        $this->assertStringEndsWith('.png', Onym::fromUpload(UploadedFile::fake()->create('avatar.jpg', 1, 'image/png'), 'uuid'));
+        $avatar = Onym::fromUpload(UploadedFile::fake()->create('avatar.jpg', 1, 'image/png'), 'uuid');
+        $this->assertTrue(Str::isUuid(pathinfo($avatar, PATHINFO_FILENAME)));
+        $this->assertStringEndsWith('.png', $avatar);
     }
 
     #[Test]

@@ -18,7 +18,7 @@ use Blaspsoft\Onym\Facades\Onym;
 Onym::slug('Q3 Report', 'pdf');                                // q3-report.pdf
 Onym::pipeline()->date()->slug()->random(6)->make('Q3 Report', 'pdf'); // 2024-03-15_q3-report_x7k2p9.pdf
 Onym::unique('report', 'pdf', 'numbered', directory: 'invoices');      // report_3.pdf if _1 and _2 exist
-Onym::fromUpload($request->file('avatar'), 'uuid');            // 9b2f…e1.png, extension from the file's real type
+Onym::fromUpload($request->file('avatar'), 'uuid');            // 9b2f…e1.png, extension from the file's detected type
 ```
 
 - **Strategies:** `random`, `uuid`, `ulid`, `timestamp`, `date`, `numbered`, `slug`, `hash`, or your own.
@@ -195,7 +195,7 @@ It checks the disk in `onym.unique.disk` (the default disk if that's `null`) and
 
 ### Uploaded files
 
-`fromUpload()` names an uploaded file from its original name. The extension comes from the file's detected type, not the name the client sent:
+`fromUpload()` names an uploaded file from its original name. The extension comes from the file's detected type, not the name the client sent. Only if no type can be detected does it fall back to the client's extension:
 
 ```php
 Onym::fromUpload($request->file('document'), 'slug');      // "Q3 Report.PDF" → q3-report.pdf

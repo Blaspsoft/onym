@@ -15,8 +15,15 @@ class SlugStrategy implements Strategy
         $separator = (string) ($options['separator'] ?? $context->separator);
 
         // Names with nothing to slug (e.g. "!!!" or non-Latin text) fall back to the default filename.
-        return Str::slug($context->original, $separator)
-            ?: Str::slug($context->fallbackName, $separator)
-            ?: 'file';
+        // Compare with '' rather than using ?:, so a slug of "0" is kept.
+        foreach ([$context->original, $context->fallbackName] as $name) {
+            $slug = Str::slug($name, $separator);
+
+            if ($slug !== '') {
+                return $slug;
+            }
+        }
+
+        return 'file';
     }
 }

@@ -113,7 +113,7 @@ class Onym
 
             return $this->make($filename, $extension, $strategy, [
                 ...$options,
-                'suffix' => $this->stringOption($merged, 'suffix').$this->counter($merged, $attempt),
+                'counter' => $this->counter($merged, $attempt),
             ]);
         }, $disk, $directory);
     }
@@ -219,7 +219,8 @@ class Onym
      * @internal Use make() or pipeline().
      *
      * @param  list<array{0: string|Strategy, 1: array<string, mixed>}>  $steps
-     * @param  array<string, mixed>  $options  Name-level options: prefix, suffix, separator, sanitize.
+     * @param  array<string, mixed>  $options  Name-level options: prefix, suffix, separator, sanitize, and
+     *                                         counter (added after the length cut; used by unique()).
      */
     public function generate(array $steps, ?string $filename, ?string $extension, array $options): string
     {
@@ -245,13 +246,20 @@ class Onym
             .implode($separator, $this->parts($steps, $context))
             .$this->stringOption($options, 'suffix');
 
+        // The counter added by unique() goes on after the name is cut to length,
+        // so a long name still gets a different counter on each attempt.
+        $counter = $this->stringOption($options, 'counter');
+
         // Clean the whole name, so prefixes, suffixes, date formats and custom
         // strategies cannot add path separators or make the file hidden either.
         if ($options['sanitize'] ?? $this->config->get('onym.sanitize', true)) {
             $basename = $this->sanitizer->filename($basename, $defaultFilename);
+            $counter = $this->sanitizer->filename($counter, '');
         }
 
-        return $this->sanitizer->limit($basename, $context->extension, $this->maxLength()).'.'.$context->extension;
+        $basename = $this->sanitizer->limit($basename, $context->extension, $this->maxLength() - strlen($counter));
+
+        return $basename.$counter.'.'.$context->extension;
     }
 
     /**

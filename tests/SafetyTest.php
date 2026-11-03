@@ -105,6 +105,23 @@ class SafetyTest extends TestCase
     }
 
     #[Test]
+    public function a_slug_of_zero_is_kept(): void
+    {
+        $this->assertSame('0.pdf', Onym::slug('0', 'pdf'));
+    }
+
+    #[Test]
+    public function it_rejects_a_cut_that_leaves_no_name(): void
+    {
+        config()->set('onym.max_length', 6);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot be shortened');
+
+        Onym::numbered('日本', 'txt');
+    }
+
+    #[Test]
     public function it_rejects_an_extension_that_leaves_no_room(): void
     {
         config()->set('onym.max_length', 5);

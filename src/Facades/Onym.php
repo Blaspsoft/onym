@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static string hash(?string $filename = null, ?string $extension = null, ?array<string, mixed> $options = null)
  * @method static \Blaspsoft\Onym\Onym extend(string $name, \Blaspsoft\Onym\Contracts\Strategy|\Closure $strategy)
  * @method static bool hasStrategy(string $name)
+ * @method static string sanitize(string $filename)
  *
  * @see \Blaspsoft\Onym\Onym
  */

@@ -12,6 +12,7 @@ use Blaspsoft\Onym\Strategies\NumberStrategy;
 use Blaspsoft\Onym\Strategies\RandomStrategy;
 use Blaspsoft\Onym\Strategies\SlugStrategy;
 use Blaspsoft\Onym\Strategies\TimestampStrategy;
+use Blaspsoft\Onym\Strategies\UlidStrategy;
 use Blaspsoft\Onym\Strategies\UuidStrategy;
 use Closure;
 use Illuminate\Support\Manager;
@@ -81,6 +82,11 @@ class OnymManager extends Manager
     protected function createUuidDriver(): Strategy
     {
         return new UuidStrategy;
+    }
+
+    protected function createUlidDriver(): Strategy
+    {
+        return new UlidStrategy;
     }
 
     protected function createTimestampDriver(): Strategy

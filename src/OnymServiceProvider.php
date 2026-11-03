@@ -27,6 +27,7 @@ class OnymServiceProvider extends ServiceProvider
         $this->app->singleton('onym', fn (Application $app) => new Onym(
             $app->make(OnymManager::class),
             $app->make('config'),
+            filesystems: fn () => $app->make('filesystem'),
         ));
 
         $this->app->alias('onym', Onym::class);

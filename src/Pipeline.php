@@ -144,6 +144,30 @@ final class Pipeline implements Strategy
     }
 
     /**
+     * Generate a filename that does not exist yet on a storage disk.
+     *
+     * Pipelines with a random, uuid or ulid step simply try again; others
+     * append a counter (2024-03-15_q3-report_2.pdf).
+     */
+    public function unique(?string $filename = null, ?string $extension = null, ?string $disk = null, string $directory = ''): string
+    {
+        $regenerates = (bool) array_filter(
+            $this->steps,
+            fn (array $step): bool => is_string($step[0]) && in_array($step[0], Onym::RANDOM_STRATEGIES, true),
+        );
+
+        return $this->onym->firstAvailable(function (int $attempt) use ($filename, $extension, $regenerates): string {
+            if ($attempt === 1 || $regenerates) {
+                return $this->make($filename, $extension);
+            }
+
+            $suffix = (string) ($this->options['suffix'] ?? '');
+
+            return $this->suffix($suffix.$this->onym->counter($this->options, $attempt))->make($filename, $extension);
+        }, $disk, $directory);
+    }
+
+    /**
      * Used when the pipeline is registered as a strategy: returns the joined
      * pieces, leaving the prefix, suffix and extension to the caller.
      */

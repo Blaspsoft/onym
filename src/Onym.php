@@ -93,7 +93,7 @@ class Onym
             
             'numbered' => $this->numbered($defaultFilename, $extension, $useOptions),
             
-            'slug' => $this->slug($defaultFilename, $extension),
+            'slug' => $this->slug($defaultFilename, $extension, $useOptions),
             
             'hash' => $this->hash($defaultFilename, $extension, $useOptions),
             

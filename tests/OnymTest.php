@@ -145,6 +145,13 @@ class OnymTest extends TestCase
     }
 
     #[Test]
+    public function it_passes_options_to_slug_strategy_in_make()
+    {
+        $filename = $this->onym->make('My File Name', 'slug', 'txt', ['separator' => '_', 'prefix' => 'pre_']);
+        $this->assertEquals('pre_my_file_name.txt', $filename);
+    }
+
+    #[Test]
     public function it_allows_options_override_in_hash_method()
     {
         $hash = md5('filename');

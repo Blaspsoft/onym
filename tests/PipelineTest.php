@@ -184,6 +184,28 @@ class PipelineTest extends TestCase
     }
 
     #[Test]
+    public function an_invalid_step_separator_throws(): void
+    {
+        Onym::extend('report', Onym::pipeline()->date()->slug());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Onym option [separator] must be a string, bool given');
+
+        Onym::pipeline()->add('report', ['separator' => true])->make('Q3 Report', 'pdf');
+    }
+
+    #[Test]
+    public function an_empty_pipeline_used_as_a_strategy_throws(): void
+    {
+        Onym::extend('empty', Onym::pipeline());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('at least one step');
+
+        Onym::pipeline()->date()->add('empty')->make('x', 'pdf');
+    }
+
+    #[Test]
     public function an_empty_pipeline_throws(): void
     {
         $this->expectException(InvalidArgumentException::class);

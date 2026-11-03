@@ -76,6 +76,19 @@ class UniqueTest extends TestCase
     }
 
     #[Test]
+    public function long_names_keep_room_for_a_multi_digit_counter(): void
+    {
+        config()->set('onym.max_length', 20);
+        Storage::disk('local')->put('aaaaaaaaaaaaaaaa.pdf', '');
+
+        foreach (range(2, 9) as $attempt) {
+            Storage::disk('local')->put("aaaaaaaaaaaaaa-{$attempt}.pdf", '');
+        }
+
+        $this->assertSame('aaaaaaaaaaaaa-10.pdf', Onym::unique(str_repeat('a', 40), 'pdf', 'slug'));
+    }
+
+    #[Test]
     public function long_pipeline_names_keep_room_for_the_counter(): void
     {
         config()->set('onym.max_length', 20);

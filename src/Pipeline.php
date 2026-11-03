@@ -176,11 +176,21 @@ final class Pipeline implements Strategy
      */
     public function part(Context $context, array $options): string
     {
+        if ($this->steps === []) {
+            throw new InvalidArgumentException('An Onym pipeline needs at least one step');
+        }
+
         if ($this->resolving) {
             throw new InvalidArgumentException('An Onym pipeline cannot contain itself');
         }
 
-        $separator = (string) ($this->options['separator'] ?? $options['separator'] ?? $context->separator);
+        $separator = $this->options['separator'] ?? $options['separator'] ?? $context->separator;
+
+        if (! is_string($separator) && ! is_int($separator) && ! is_float($separator)) {
+            throw new InvalidArgumentException('Onym option [separator] must be a string, '.get_debug_type($separator).' given');
+        }
+
+        $separator = (string) $separator;
         $this->resolving = true;
 
         try {

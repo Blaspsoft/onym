@@ -2,19 +2,10 @@
 
 namespace Blaspsoft\Onym;
 
-use DateTime;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
-/**
- * @method static string make(string $defaultFilename, ?string $strategy = null, ?string $extension = null, ?array $options = null)
- * @method static string random(string $extension, ?array $options = [])
- * @method static string uuid(string $extension, ?array $options = [])
- * @method static string timestamp(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string date(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string numbered(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string slug(string $defaultFilename, string $extension, ?array $options = [])
- * @method static string hash(string $defaultFilename, string $extension, ?array $options = [])
- */
 class Onym
 {
     /**
@@ -97,21 +88,27 @@ class Onym
             
             'hash' => $this->hash($defaultFilename, $extension, $useOptions),
             
-            default => $defaultFilename . '.' . $extension,
+            default => $this->cleanFilename($defaultFilename) . '.' . $this->cleanExtension($extension),
         };
     }
 
     /**
      * Generate a random string of characters.
      *
-     * @param int|null $length The length of the random string.
-     * @param string|null $extension The extension of the file.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The random string.
+     * @throws \InvalidArgumentException If the length is less than 1.
      */
     public function random(string $extension, ?array $options = [])
     {
         $options = $this->mergeOptions($options, 'random', $this->options);
-        $length = $options['length'] ?? 16;
+        $length = (int) ($options['length'] ?? 16);
+
+        if ($length < 1) {
+            throw new InvalidArgumentException("Random length must be at least 1, {$length} given");
+        }
+
         $filename = Str::random($length);
         return $this->applyAffixes($filename, $extension, $options);
     }
@@ -119,7 +116,8 @@ class Onym
     /**
      * Generate a UUID string.
      *
-     * @param string|null $extension The extension of the file.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The UUID string.
      */
     public function uuid(string $extension, ?array $options = [])
@@ -132,46 +130,44 @@ class Onym
     /**
      * Generate a timestamp string.
      *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param array $options The options array.
+     * @param string $defaultFilename The original filename.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The timestamp string.
      */
     public function timestamp(string $defaultFilename, string $extension, ?array $options = [])
-    {   
+    {
         $options = $this->mergeOptions($options, 'timestamp', $this->options);
 
         $format = $options['format'] ?? 'Y-m-d_H-i-s';
-        $date = new DateTime();
         $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = $date->format($format) . $separator . $defaultFilename;
+        $filename = Carbon::now()->format($format) . $separator . $this->cleanFilename($defaultFilename);
         return $this->applyAffixes($filename, $extension, $options);
     }
 
     /**
      * Generate a date string.
      *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param array $options The options array. 
+     * @param string $defaultFilename The original filename.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The date string.
      */
     public function date(string $defaultFilename, string $extension, ?array $options = [])
     {
         $options = $this->mergeOptions($options, 'date', $this->options);
         $format = $options['format'] ?? 'Y-m-d';
-        $date = new DateTime();
         $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = $date->format($format) . $separator . $defaultFilename;
+        $filename = Carbon::now()->format($format) . $separator . $this->cleanFilename($defaultFilename);
         return $this->applyAffixes($filename, $extension, $options);
     }
 
     /**
      * Generate a numbered string.
      *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param array $options The options array.
+     * @param string $defaultFilename The original filename.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The numbered string.
      */
     public function numbered(string $defaultFilename, string $extension, ?array $options = [])
@@ -179,15 +175,16 @@ class Onym
         $options = $this->mergeOptions($options, 'numbered', $this->options);
         $number = $options['number'] ?? 1;
         $separator = $options['separator'] ?? $this->defaultSeparator;
-        $filename = $defaultFilename . $separator . $number;
+        $filename = $this->cleanFilename($defaultFilename) . $separator . $number;
         return $this->applyAffixes($filename, $extension, $options);
     }
 
     /**
      * Generate a slug string.
      *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
+     * @param string $defaultFilename The original filename.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The slug string.
      */
     public function slug(string $defaultFilename, string $extension, ?array $options = [])
@@ -195,15 +192,21 @@ class Onym
         $options = $this->mergeOptions($options, 'slug', $this->options);
         $separator = $options['separator'] ?? $this->defaultSeparator;
         $filename = Str::slug($defaultFilename, $separator);
+
+        // Names with nothing to slug (e.g. "!!!" or non-Latin text) fall back to the default filename.
+        if ($filename === '') {
+            $filename = Str::slug($this->defaultFilename, $separator) ?: 'file';
+        }
+
         return $this->applyAffixes($filename, $extension, $options);
     }
 
     /**
      * Generate a hash string.
      *
-     * @param string|null $defaultFilename The original filename.
-     * @param string|null $extension The extension of the file.
-     * @param array $options The options array.
+     * @param string $defaultFilename The original filename.
+     * @param string $extension The extension of the file.
+     * @param array|null $options The options array.
      * @return string The hash string.
      */
     public function hash(string $defaultFilename, string $extension, ?array $options = [])
@@ -235,10 +238,41 @@ class Onym
     }
 
     /**
+     * Strip path separators, control characters and leading dots from a
+     * caller-supplied filename so it cannot escape a directory or become hidden.
+     *
+     * @param string $filename
+     * @return string
+     */
+    private function cleanFilename(string $filename): string
+    {
+        $filename = preg_replace('/[\x00-\x1F\x7F\/\\\\]/u', '', $filename) ?? '';
+        $filename = ltrim(trim($filename), '.');
+
+        return $filename === '' ? $this->defaultFilename : $filename;
+    }
+
+    /**
+     * Reduce an extension to letters, digits and single inner dots
+     * (so "tar.gz" survives but ".pdf" and "txt/../x" do not).
+     *
+     * @param string $extension
+     * @return string
+     */
+    private function cleanExtension(string $extension): string
+    {
+        $extension = preg_replace('/[^A-Za-z0-9.]/', '', $extension) ?? '';
+        $extension = trim(preg_replace('/\.{2,}/', '.', $extension) ?? '', '.');
+
+        return $extension === '' ? $this->defaultExtension : $extension;
+    }
+
+    /**
      * Apply prefix and suffix to filename
      *
      * @param string $filename
-     * @param array $options
+     * @param string $extension
+     * @param array|null $options
      * @return string
      */
     private function applyAffixes(string $filename, string $extension, ?array $options = []): string
@@ -249,6 +283,6 @@ class Onym
         if (isset($options['suffix'])) {
             $filename = $filename . $options['suffix'];
         }
-        return $filename . '.' . $extension;
+        return $filename . '.' . $this->cleanExtension($extension);
     }
 }

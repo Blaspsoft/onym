@@ -145,6 +145,13 @@ class OnymTest extends TestCase
     }
 
     #[Test]
+    public function it_passes_options_to_slug_strategy_in_make()
+    {
+        $filename = $this->onym->make('My File Name', 'slug', 'txt', ['separator' => '_', 'prefix' => 'pre_']);
+        $this->assertEquals('pre_my_file_name.txt', $filename);
+    }
+
+    #[Test]
     public function it_allows_options_override_in_hash_method()
     {
         $hash = md5('filename');
@@ -209,5 +216,84 @@ class OnymTest extends TestCase
         $hash = md5('filename');
         $filename = $this->onym->hash('filename', 'txt', ['prefix' => null, 'suffix' => null, 'algorithm' => null]);
         $this->assertEquals($hash . '.txt', $filename);
+    }
+
+    #[Test]
+    public function test_timestamp_uses_default_separator()
+    {
+        $onym = new Onym([], '|'); // Inject custom defaultSeparator
+        $result = $onym->timestamp('filename', 'txt');
+        $this->assertStringContainsString('|filename.txt', $result);
+    }
+
+    #[Test]
+    public function test_timestamp_overrides_separator_in_options()
+    {
+        $onym = new Onym([], '|');
+        $result = $onym->timestamp('filename', 'txt', ['separator' => '.']);
+        $this->assertStringContainsString('.filename.txt', $result);
+        $this->assertStringNotContainsString('|filename.txt', $result);
+    }
+
+    #[Test]
+    public function test_date_uses_default_separator()
+    {
+        $onym = new Onym([], '|');
+        $result = $onym->date('filename', 'txt');
+        $this->assertStringContainsString('|filename.txt', $result);
+    }
+
+    #[Test]
+    public function test_date_overrides_separator_in_options()
+    {
+        $onym = new Onym([], '|');
+        $result = $onym->date('filename', 'txt', ['separator' => '.']);
+        $this->assertStringContainsString('.filename.txt', $result);
+        $this->assertStringNotContainsString('|filename.txt', $result);
+    }
+
+    #[Test]
+    public function test_numbered_uses_default_separator()
+    {
+        $onym = new Onym([
+            'numbered' => ['prefix' => '', 'suffix' => '', 'number' => 5] // No separator defined!
+        ], '|');
+
+        $result = $onym->numbered('filename', 'txt');
+
+        $this->assertStringContainsString('|5.txt', $result);
+    }
+
+    #[Test]
+    public function test_numbered_overrides_separator_in_options()
+    {
+        $onym = new Onym([], '|');
+        $result = $onym->numbered('filename', 'txt', ['separator' => '-', 'number' => 5]);
+        $this->assertStringContainsString('-5.txt', $result);
+        $this->assertStringNotContainsString('|5.txt', $result);
+    }
+
+    #[Test]
+    public function test_slug_uses_default_separator()
+    {
+        $onym = new Onym([
+            'slug' => ['prefix' => '', 'suffix' => ''] // No separator defined!
+        ], '_');
+
+        $result = $onym->slug('My File Name', 'txt');
+
+        $this->assertStringContainsString('_', $result);
+        $this->assertStringNotContainsString('-', $result);
+        $this->assertStringEndsWith('.txt', $result);
+    }
+
+    #[Test]
+    public function test_slug_overrides_separator_in_options()
+    {
+        $onym = new Onym([], '_');
+        $result = $onym->slug('My File Name', 'txt', ['separator' => '.']);
+        $this->assertStringContainsString('.', $result);
+        $this->assertStringNotContainsString('_', $result);
+        $this->assertStringEndsWith('.txt', $result);
     }
 }

@@ -223,15 +223,15 @@ class Onym
     /**
      * Merge options with the default options.
      *
-     * @param array $options The options to merge.
+     * @param array|null $options The options to merge.
      * @param string $strategy The strategy being used.
      * @param array $defaultOptions The default options.
      * @return array The merged options.
      */
-    private function mergeOptions(array $options, string $strategy, array $defaultOptions): array
+    private function mergeOptions(?array $options, string $strategy, array $defaultOptions): array
     {
         $strategyOptions = $defaultOptions[$strategy] ?? [];
-        return array_merge($strategyOptions, $options);
+        return array_merge($strategyOptions, $options ?? []);
     }
 
     /**
